@@ -267,9 +267,11 @@
     <fieldset class="ev-present-only">
       <legend>EV (Educational Volunteer) Status</legend>
 
-      <label>How many EVs present today?</label>
-      <input type="number" id="evPresentCount" min="1" value="1">
-      <div id="evCountMsg" style="font-size:12px; color:#666666; margin-top:3px;"></div>
+      <div class="mode-official">
+        <label>How many EVs present today?</label>
+        <input type="number" id="evPresentCount" min="1" value="1">
+        <div id="evCountMsg" style="font-size:12px; color:#666666; margin-top:3px;"></div>
+      </div>
 
       <label>EV Name(s) Present</label>
       <div id="evNamesContainer">
@@ -436,6 +438,10 @@ function applyReportMode(mode) {
   }
 
   updateEvPresenceVisibility();
+
+  if (document.getElementById('schoolName').value !== "") {
+    renderEvNamesSelect();
+  }
 }
 
 // EV absence handling
@@ -737,10 +743,15 @@ function renderEvNamesSelect() {
   evPresentCountField.setAttribute('max', currentSchoolEvs.length);
   evCountMsg.textContent = currentSchoolEvs.length + ' active EV(s) assigned to this centre.';
 
-  let count = parseInt(evPresentCountField.value, 10);
-  if (isNaN(count) || count < 1) count = 1;
-  if (count > currentSchoolEvs.length) count = currentSchoolEvs.length;
-  evPresentCountField.value = count;
+  let count;
+  if (reportTypeSelect.value === 'EV') {
+    count = 1; // an EV reports only for themselves
+  } else {
+    count = parseInt(evPresentCountField.value, 10);
+    if (isNaN(count) || count < 1) count = 1;
+    if (count > currentSchoolEvs.length) count = currentSchoolEvs.length;
+    evPresentCountField.value = count;
+  }
 
   for (let i = 0; i < count; i++) {
     const select = document.createElement('select');
