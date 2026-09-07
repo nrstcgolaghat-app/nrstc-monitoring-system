@@ -335,6 +335,22 @@
       <input type="text" id="otherActivity">
     </fieldset>
 
+    <fieldset class="ev-present-only" id="assessmentDetailsFieldset" style="display:none;">
+      <legend>Assessment / Test Details</legend>
+
+      <label>What is this visit for?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="assessmentStage" value="Test Day" checked> Test day (administering the test)</label>
+        <label><input type="radio" name="assessmentStage" value="Results Entry"> Sharing results (after copies are checked)</label>
+      </div>
+
+      <label>Subject(s) Tested</label>
+      <input type="text" id="subjectsTested" placeholder="e.g. Language, Mathematics">
+
+      <label>Maximum Marks</label>
+      <input type="number" id="maximumMarks" min="0" placeholder="e.g. 25">
+    </fieldset>
+
     <fieldset class="ev-present-only" id="studentListFieldset">
       <legend>Student attendance and Daily Progress</legend>
 
@@ -459,23 +475,39 @@ function updateEvPresenceVisibility() {
     absenceReasonWrap.style.display = 'none';
     evPresentOnlyEls.forEach(function(el) { el.style.display = ''; });
     updateStudentListVisibility();
+    applyActivityFieldsToRoster();
     return;
   }
   const absent = isEvAbsent();
   absenceReasonWrap.style.display = absent ? '' : 'none';
   evPresentOnlyEls.forEach(function(el) { el.style.display = absent ? 'none' : ''; });
   updateStudentListVisibility();
+  applyActivityFieldsToRoster();
 }
 
 const studentListFieldset = document.getElementById('studentListFieldset');
+const assessmentDetailsFieldset = document.getElementById('assessmentDetailsFieldset');
 
 function updateStudentListVisibility() {
   if (reportTypeSelect.value === '' || isEvAbsent()) {
     return;
   }
   const activity = document.querySelector('input[name="activity"]:checked');
-  const showRoster = activity && (activity.value === 'Bridge course teaching' || activity.value === 'Assessment/Test conducted');
+  const isAssessment = activity && activity.value === 'Assessment/Test conducted';
+  const showRoster = activity && (activity.value === 'Bridge course teaching' || isAssessment);
   studentListFieldset.style.display = showRoster ? '' : 'none';
+  assessmentDetailsFieldset.style.display = isAssessment ? '' : 'none';
+}
+
+function applyActivityFieldsToRoster() {
+  const activity = document.querySelector('input[name="activity"]:checked');
+  const isAssessment = activity && activity.value === 'Assessment/Test conducted';
+  rosterCards.querySelectorAll('.student-bridge-fields').forEach(function(el) {
+    el.style.display = isAssessment ? 'none' : '';
+  });
+  rosterCards.querySelectorAll('.student-assessment-fields').forEach(function(el) {
+    el.style.display = isAssessment ? '' : 'none';
+  });
 }
 
 document.querySelectorAll('input[name="evPresent"]').forEach(function(r) {
@@ -484,6 +516,7 @@ document.querySelectorAll('input[name="evPresent"]').forEach(function(r) {
 
 document.querySelectorAll('input[name="activity"]').forEach(function(r) {
   r.addEventListener('change', updateStudentListVisibility);
+  r.addEventListener('change', applyActivityFieldsToRoster);
 });
 
 reportTypeSelect.addEventListener('change', function() {
@@ -628,6 +661,7 @@ function loadRoster(udiseCode) {
         '<option value="Class II-V">Class II-V</option>' +
       '</select>' +
 
+      '<div class="student-bridge-fields" data-idx="' + i + '">' +
       '<label>Subjects Taught Today</label>' +
       '<div class="checkbox-row student-subjects-box" data-idx="' + i + '"></div>' +
 
@@ -646,6 +680,18 @@ function loadRoster(udiseCode) {
         '<option value="Steady">Steady</option>' +
         '<option value="Needs Support">Needs Support</option>' +
       '</select>' +
+      '</div>' +
+
+      '<div class="student-assessment-fields" data-idx="' + i + '" style="display:none;">' +
+      '<label>Marks Obtained</label>' +
+      '<input type="number" class="student-marks" data-idx="' + i + '" min="0" placeholder="Leave blank if not yet checked">' +
+
+      '<label>Result Status</label>' +
+      '<select class="student-result-status" data-idx="' + i + '">' +
+        '<option value="Awaiting Result">Awaiting Result</option>' +
+        '<option value="Result Declared">Result Declared</option>' +
+      '</select>' +
+      '</div>' +
 
       '<label>Mainstreamed to Regular School</label>' +
       '<div class="roster-radio">' +
@@ -665,6 +711,8 @@ function loadRoster(udiseCode) {
       renderStudentSubjects(this.closest('.student-card').querySelector('.student-subjects-box'), this.value);
     });
   });
+
+  applyActivityFieldsToRoster();
 
   function toggleStudentCardFields(card) {
     const att = card.querySelector('input[name^="student_"]:checked');
@@ -1026,6 +1074,8 @@ function buildStudentRecords() {
     const progress = card.querySelector('select.student-progress');
     const mainstream = card.querySelector('input.mainstream-radio:checked');
     const schoolField = card.querySelector('input.mainstream-school');
+    const marksField = card.querySelector('input.student-marks');
+    const resultStatusField = card.querySelector('select.student-result-status');
     records.push({
       studentName: name,
       studentStatus: status,
@@ -1035,6 +1085,8 @@ function buildStudentRecords() {
       topicTaught: topicField ? topicField.value : '',
       bridgeCourseStatus: bridgeSelect ? bridgeSelect.value : '',
       progress: progress ? progress.value : '',
+      marksObtained: marksField ? marksField.value : '',
+      resultStatus: resultStatusField ? resultStatusField.value : '',
       mainstreamed: mainstream ? mainstream.value : '',
       mainstreamSchool: schoolField ? schoolField.value : ''
     });
@@ -1091,6 +1143,9 @@ form.addEventListener('submit', function(e) {
     absenceReasonOther: absent ? document.getElementById('absenceReasonOther').value : '',
     activities: getCheckedActivity(),
     otherActivity: document.getElementById('otherActivity').value,
+    assessmentStage: getRadioValue('assessmentStage'),
+    subjectsTested: document.getElementById('subjectsTested').value,
+    maximumMarks: document.getElementById('maximumMarks').value,
     designation: document.getElementById('designation').value,
     visitDate: document.getElementById('visitDate').value,
     visitTime: document.getElementById('visitTime').value,
