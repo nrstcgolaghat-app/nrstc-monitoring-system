@@ -319,7 +319,7 @@
       </select>
     </fieldset>
 
-    <fieldset class="mode-ev ev-present-only">
+    <fieldset class="ev-present-only">
       <legend>Today's Activities</legend>
 
       <div class="checkbox-row">
@@ -470,7 +470,7 @@ function updateEvPresenceVisibility() {
 const studentListFieldset = document.getElementById('studentListFieldset');
 
 function updateStudentListVisibility() {
-  if (reportTypeSelect.value !== 'EV' || isEvAbsent()) {
+  if (reportTypeSelect.value === '' || isEvAbsent()) {
     return;
   }
   const activity = document.querySelector('input[name="activity"]:checked');
