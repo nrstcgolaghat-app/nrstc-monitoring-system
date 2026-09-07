@@ -1012,23 +1012,13 @@ function showStatus(message, cls) {
   statusBox.className = cls;
 }
 
-function buildRosterSummary() {
+function buildStudentRecords() {
   const cards = rosterCards.querySelectorAll('.student-card');
-  const parts = [];
+  const records = [];
   cards.forEach(function(card) {
     const name = card.getAttribute('data-name');
     const status = card.getAttribute('data-status');
     const att = card.querySelector('input[name^="student_"]:checked');
-    parts.push(name + ' (' + status + '): ' + (att ? att.value : ''));
-  });
-  return parts.join('; ');
-}
-
-function buildMainstreamingSummary() {
-  const cards = rosterCards.querySelectorAll('.student-card');
-  const parts = [];
-  cards.forEach(function(card) {
-    const name = card.getAttribute('data-name');
     const classLevel = card.querySelector('select.student-class-level');
     const subjectBoxes = card.querySelectorAll('.student-subjects-box input[type=checkbox]:checked');
     const topicField = card.querySelector('input.student-topic');
@@ -1036,16 +1026,20 @@ function buildMainstreamingSummary() {
     const progress = card.querySelector('select.student-progress');
     const mainstream = card.querySelector('input.mainstream-radio:checked');
     const schoolField = card.querySelector('input.mainstream-school');
-    const classLevelVal = classLevel ? classLevel.value : '';
-    const subjectsVal = Array.from(subjectBoxes).map(function(cb) { return cb.value; }).join('/');
-    const topicVal = topicField ? topicField.value : '';
-    const bridgeStatus = bridgeSelect ? bridgeSelect.value : '';
-    const progressVal = progress ? progress.value : '';
-    const mainstreamStatus = mainstream ? mainstream.value : '';
-    const schoolText = schoolField ? schoolField.value : '';
-    parts.push(name + ' (' + classLevelVal + '): Subjects [' + subjectsVal + ']' + (topicVal ? ' - ' + topicVal : '') + ', Bridge course ' + bridgeStatus + ', Progress ' + progressVal + ', Mainstreamed ' + mainstreamStatus + (schoolText ? ' (' + schoolText + ')' : ''));
+    records.push({
+      studentName: name,
+      studentStatus: status,
+      attendance: att ? att.value : '',
+      classLevel: classLevel ? classLevel.value : '',
+      subjectsTaught: Array.from(subjectBoxes).map(function(cb) { return cb.value; }).join('/'),
+      topicTaught: topicField ? topicField.value : '',
+      bridgeCourseStatus: bridgeSelect ? bridgeSelect.value : '',
+      progress: progress ? progress.value : '',
+      mainstreamed: mainstream ? mainstream.value : '',
+      mainstreamSchool: schoolField ? schoolField.value : ''
+    });
   });
-  return parts.join('; ');
+  return records;
 }
 
 form.addEventListener('submit', function(e) {
@@ -1106,10 +1100,9 @@ form.addEventListener('submit', function(e) {
     lessonPlan: getRadioValue('lessonPlan'),
     tlm: getRadioValue('tlm'),
     mainstreamedCount: document.getElementById('mainstreamedCount').value,
-    mainstreamingDetail: buildMainstreamingSummary(),
     totalEnrollment: document.getElementById('totalEnrollment').value,
     studentsPresent: document.getElementById('studentsPresent').value,
-    studentAttendanceDetail: buildRosterSummary(),
+    studentRecords: buildStudentRecords(),
     smcRecords: getRadioValue('smcRecords'),
     mdmRegister: getRadioValue('mdmRegister'),
     overallRating: document.getElementById('overallRating').value,
