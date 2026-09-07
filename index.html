@@ -474,7 +474,7 @@ function updateStudentListVisibility() {
     return;
   }
   const activity = document.querySelector('input[name="activity"]:checked');
-  const showRoster = activity && activity.value === 'Bridge course teaching';
+  const showRoster = activity && (activity.value === 'Bridge course teaching' || activity.value === 'Assessment/Test conducted');
   studentListFieldset.style.display = showRoster ? '' : 'none';
 }
 
