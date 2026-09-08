@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NRSTC Monitoring System</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
   body {
@@ -110,6 +111,10 @@
     background-color: #1a5aa8;
     border-color: #123d73;
   }
+  .btn-orange {
+    background-color: #c96a1a;
+    border-color: #8f4a10;
+  }
   #statusBox {
     margin-top: 12px;
     padding: 10px;
@@ -181,6 +186,23 @@
     font-size: 13px;
     color: #666666;
     margin-top: 8px;
+  }
+  .as-text { font-family: "Noto Sans Bengali", Arial, sans-serif; }
+  #paperOverlay {
+    display: none; position: fixed; inset: 0; background: #ffffff; z-index: 999; overflow-y: auto; padding: 20px;
+  }
+  #paperOverlay.open { display: block; }
+  .paper-header { text-align: center; border-bottom: 2px solid #000000; padding-bottom: 10px; margin-bottom: 15px; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; font-size: 14px; margin-bottom: 15px; }
+  .paper-question { margin-bottom: 14px; }
+  .paper-question .qtext-en { font-weight: bold; }
+  .paper-question .qtext-as { font-family: "Noto Sans Bengali", Arial, sans-serif; color: #333333; margin-top: 2px; }
+  .paper-instructions { border: 1px solid #999999; padding: 8px; margin-bottom: 15px; font-size: 13px; }
+  @media print {
+    body * { visibility: hidden; }
+    #paperOverlay, #paperOverlay * { visibility: visible; }
+    #paperOverlay { position: absolute; top: 0; left: 0; }
+    .no-print { display: none !important; }
   }
   footer {
     text-align: center;
@@ -344,11 +366,19 @@
         <label><input type="radio" name="assessmentStage" value="Results Entry"> Sharing results (after copies are checked)</label>
       </div>
 
+      <label>Select Exam</label>
+      <select id="examSelect">
+        <option value="">-- Select School first --</option>
+      </select>
+      <div id="examListMsgMain" style="font-size:12px; color:#666666; margin-top:3px;"></div>
+
       <label>Subject(s) Tested</label>
-      <input type="text" id="subjectsTested" placeholder="e.g. Language, Mathematics">
+      <input type="text" id="subjectsTested" readonly>
 
       <label>Maximum Marks</label>
-      <input type="number" id="maximumMarks" min="0" placeholder="e.g. 25">
+      <input type="number" id="maximumMarks" readonly>
+
+      <button type="button" class="btn-blue" id="viewPaperBtn" style="display:none;" onclick="viewQuestionPaper()">View / Print Question Paper</button>
     </fieldset>
 
     <fieldset class="ev-present-only" id="studentListFieldset">
@@ -420,6 +450,15 @@
 <footer>
   Samagra Shiksha &middot; Golaghat
 </footer>
+
+<div id="paperOverlay">
+  <div class="no-print" style="margin-bottom:10px;">
+    <button type="button" class="btn-blue" onclick="window.print()">Print</button>
+    <button type="button" class="btn-orange" onclick="closePaper()">Close</button>
+  </div>
+  <div id="paperBody"></div>
+</div>
+
 
 <script>
 // ---- CONFIGURE THIS: paste your deployed Google Apps Script Web App URL here ----
@@ -596,6 +635,97 @@ function loadCachedMasterData() {
 }
 
 loadMasterData();
+
+// ---- Exam list (from Exam Manager) ----
+let EXAM_DATA = [];
+const examSelect = document.getElementById('examSelect');
+const examListMsgMain = document.getElementById('examListMsgMain');
+const viewPaperBtn = document.getElementById('viewPaperBtn');
+
+function loadExamList() {
+  examListMsgMain.textContent = 'Loading exam list...';
+  fetch(WEB_APP_URL + '?action=examList')
+    .then(function(res) { return res.json(); })
+    .then(function(json) {
+      EXAM_DATA = json.exams || [];
+      populateExamDropdown();
+      examListMsgMain.textContent = EXAM_DATA.length > 0
+        ? EXAM_DATA.length + ' released exam(s) available.'
+        : 'No exams have been released yet.';
+    })
+    .catch(function() {
+      examListMsgMain.textContent = 'Could not load exam list.';
+    });
+}
+
+function populateExamDropdown() {
+  examSelect.innerHTML = '<option value="">-- Select Exam --</option>';
+  EXAM_DATA.forEach(function(x, idx) {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = x.examName + ' — ' + x.subjectEN + ' (' + x.classLevel + ', ' + x.examDate + ')';
+    examSelect.appendChild(opt);
+  });
+}
+
+examSelect.addEventListener('change', function() {
+  if (this.value === '') {
+    document.getElementById('subjectsTested').value = '';
+    document.getElementById('maximumMarks').value = '';
+    viewPaperBtn.style.display = 'none';
+    return;
+  }
+  const exam = EXAM_DATA[parseInt(this.value, 10)];
+  document.getElementById('subjectsTested').value = exam.subjectEN + (exam.subjectAS ? ' / ' + exam.subjectAS : '');
+  document.getElementById('maximumMarks').value = exam.totalMarks;
+  viewPaperBtn.style.display = '';
+});
+
+function esc(s) {
+  return String(s === undefined || s === null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function viewQuestionPaper() {
+  if (examSelect.value === '') return;
+  const exam = EXAM_DATA[parseInt(examSelect.value, 10)];
+  fetch(WEB_APP_URL + '?action=examPaper&examId=' + encodeURIComponent(exam.examId))
+    .then(function(res) { return res.json(); })
+    .then(function(full) {
+      if (full.error) { alert(full.error); return; }
+      renderPaper(full);
+    })
+    .catch(function() { alert('Could not load the question paper.'); });
+}
+
+function renderPaper(exam) {
+  let html = '<div class="paper-header"><h2>' + esc(exam.examName) + '</h2>' +
+    '<p>' + esc(exam.subjectEN) + (exam.subjectAS ? ' / <span class="as-text">' + esc(exam.subjectAS) + '</span>' : '') + '</p></div>';
+  html += '<div class="paper-meta"><span>Class: ' + esc(exam.classLevel) + '</span>' +
+    '<span>Date: ' + esc(exam.examDate) + '</span>' +
+    '<span>Duration: ' + esc(exam.duration) + '</span>' +
+    '<span>Total Marks: ' + esc(exam.totalMarks) + '</span></div>';
+  if (exam.instructionsEN || exam.instructionsAS) {
+    html += '<div class="paper-instructions">';
+    if (exam.instructionsEN) html += '<div>' + esc(exam.instructionsEN) + '</div>';
+    if (exam.instructionsAS) html += '<div class="as-text">' + esc(exam.instructionsAS) + '</div>';
+    html += '</div>';
+  }
+  (exam.questions || []).forEach(function(q) {
+    html += '<div class="paper-question">' +
+      '<div class="qtext-en">' + esc(q.questionNo) + '. ' + esc(q.textEN) + ' (' + esc(q.marks) + ' marks)</div>' +
+      (q.textAS ? '<div class="qtext-as">' + esc(q.textAS) + '</div>' : '') +
+      '</div>';
+  });
+  document.getElementById('paperBody').innerHTML = html;
+  document.getElementById('paperOverlay').classList.add('open');
+}
+
+function closePaper() {
+  document.getElementById('paperOverlay').classList.remove('open');
+}
+
+loadExamList();
 
 const rosterCards = document.getElementById('rosterCards');
 const noRosterMsg = document.getElementById('noRosterMsg');
@@ -1151,6 +1281,7 @@ form.addEventListener('submit', function(e) {
     activities: getCheckedActivity(),
     otherActivity: document.getElementById('otherActivity').value,
     assessmentStage: getRadioValue('assessmentStage'),
+    examId: examSelect.value !== '' ? EXAM_DATA[parseInt(examSelect.value, 10)].examId : '',
     subjectsTested: document.getElementById('subjectsTested').value,
     maximumMarks: document.getElementById('maximumMarks').value,
     designation: document.getElementById('designation').value,
@@ -1192,6 +1323,7 @@ form.addEventListener('submit', function(e) {
     if (result.status === 'success') {
       showStatus('Survey submitted successfully. Thank you.', 'status-success');
       form.reset();
+      viewPaperBtn.style.display = 'none';
       checkInVerified = false;
       applyReportMode('');
       document.getElementById('visitDate').valueAsDate = new Date();
