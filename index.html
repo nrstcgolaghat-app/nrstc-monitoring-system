@@ -702,7 +702,8 @@ function goToMarksEntry() {
   if (examSelect.value === '') return;
   const exam = EXAM_DATA[parseInt(examSelect.value, 10)];
   const udise = document.getElementById('udiseCode').value;
-  window.open('exam-entry.html?examId=' + encodeURIComponent(exam.examId) + '&udiseCode=' + encodeURIComponent(udise), '_blank');
+  const reportedBy = reportTypeSelect.value === 'EV' ? getEvNames() : document.getElementById('officialName').value;
+  window.open('exam-entry.html?examId=' + encodeURIComponent(exam.examId) + '&udiseCode=' + encodeURIComponent(udise) + '&reportedBy=' + encodeURIComponent(reportedBy || ''), '_blank');
 }
 
 function esc(s) {
