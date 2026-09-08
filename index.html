@@ -379,6 +379,7 @@
       <input type="number" id="maximumMarks" readonly>
 
       <button type="button" class="btn-blue" id="viewPaperBtn" style="display:none;" onclick="viewQuestionPaper()">View / Print Question Paper</button>
+      <button type="button" class="btn-orange" id="goToMarksEntryBtn" style="display:none;" onclick="goToMarksEntry()">Go to Marks Entry Page &rarr;</button>
     </fieldset>
 
     <fieldset class="ev-present-only" id="studentListFieldset">
@@ -534,7 +535,9 @@ function updateStudentListVisibility() {
   }
   const activity = document.querySelector('input[name="activity"]:checked');
   const isAssessment = activity && activity.value === 'Assessment/Test conducted';
-  const showRoster = activity && (activity.value === 'Bridge course teaching' || isAssessment);
+  const stage = document.querySelector('input[name="assessmentStage"]:checked');
+  const isResultsStage = isAssessment && stage && stage.value === 'Results Entry';
+  const showRoster = activity && (activity.value === 'Bridge course teaching' || isAssessment) && !isResultsStage;
   studentListFieldset.style.display = showRoster ? '' : 'none';
   assessmentDetailsFieldset.style.display = isAssessment ? '' : 'none';
 }
@@ -542,14 +545,9 @@ function updateStudentListVisibility() {
 function applyActivityFieldsToRoster() {
   const activity = document.querySelector('input[name="activity"]:checked');
   const isAssessment = activity && activity.value === 'Assessment/Test conducted';
-  const stage = document.querySelector('input[name="assessmentStage"]:checked');
-  const isResultsEntry = isAssessment && stage && stage.value === 'Results Entry';
   const rosterCardsEl = document.getElementById('rosterCards');
   rosterCardsEl.querySelectorAll('.student-bridge-fields').forEach(function(el) {
     el.style.display = isAssessment ? 'none' : '';
-  });
-  rosterCardsEl.querySelectorAll('.student-assessment-fields').forEach(function(el) {
-    el.style.display = isResultsEntry ? '' : 'none';
   });
 }
 
@@ -564,6 +562,7 @@ document.querySelectorAll('input[name="activity"]').forEach(function(r) {
 
 document.querySelectorAll('input[name="assessmentStage"]').forEach(function(r) {
   r.addEventListener('change', applyActivityFieldsToRoster);
+  r.addEventListener('change', updateStudentListVisibility);
 });
 
 reportTypeSelect.addEventListener('change', function() {
@@ -642,6 +641,7 @@ let EXAM_DATA = [];
 const examSelect = document.getElementById('examSelect');
 const examListMsgMain = document.getElementById('examListMsgMain');
 const viewPaperBtn = document.getElementById('viewPaperBtn');
+const goToMarksEntryBtn = document.getElementById('goToMarksEntryBtn');
 
 function loadExamList() {
   examListMsgMain.textContent = 'Loading exam list...';
@@ -669,18 +669,41 @@ function populateExamDropdown() {
   });
 }
 
+function updateAssessmentButtons() {
+  const stage = document.querySelector('input[name="assessmentStage"]:checked');
+  const isResultsStage = stage && stage.value === 'Results Entry';
+  if (examSelect.value === '') {
+    viewPaperBtn.style.display = 'none';
+    goToMarksEntryBtn.style.display = 'none';
+    return;
+  }
+  viewPaperBtn.style.display = isResultsStage ? 'none' : '';
+  goToMarksEntryBtn.style.display = isResultsStage ? '' : 'none';
+}
+
 examSelect.addEventListener('change', function() {
   if (this.value === '') {
     document.getElementById('subjectsTested').value = '';
     document.getElementById('maximumMarks').value = '';
-    viewPaperBtn.style.display = 'none';
+    updateAssessmentButtons();
     return;
   }
   const exam = EXAM_DATA[parseInt(this.value, 10)];
   document.getElementById('subjectsTested').value = exam.subjectEN + (exam.subjectAS ? ' / ' + exam.subjectAS : '');
   document.getElementById('maximumMarks').value = exam.totalMarks;
-  viewPaperBtn.style.display = '';
+  updateAssessmentButtons();
 });
+
+document.querySelectorAll('input[name="assessmentStage"]').forEach(function(r) {
+  r.addEventListener('change', updateAssessmentButtons);
+});
+
+function goToMarksEntry() {
+  if (examSelect.value === '') return;
+  const exam = EXAM_DATA[parseInt(examSelect.value, 10)];
+  const udise = document.getElementById('udiseCode').value;
+  window.open('exam-entry.html?examId=' + encodeURIComponent(exam.examId) + '&udiseCode=' + encodeURIComponent(udise), '_blank');
+}
 
 function esc(s) {
   return String(s === undefined || s === null ? '' : s)
@@ -817,17 +840,6 @@ function loadRoster(udiseCode) {
         '<option value="Improving">Improving</option>' +
         '<option value="Steady">Steady</option>' +
         '<option value="Needs Support">Needs Support</option>' +
-      '</select>' +
-      '</div>' +
-
-      '<div class="student-assessment-fields" data-idx="' + i + '" style="display:none;">' +
-      '<label>Marks Obtained</label>' +
-      '<input type="number" class="student-marks" data-idx="' + i + '" min="0" placeholder="Leave blank if not yet checked">' +
-
-      '<label>Result Status</label>' +
-      '<select class="student-result-status" data-idx="' + i + '">' +
-        '<option value="Awaiting Result">Awaiting Result</option>' +
-        '<option value="Result Declared">Result Declared</option>' +
       '</select>' +
       '</div>' +
 
@@ -1262,7 +1274,11 @@ form.addEventListener('submit', function(e) {
       showStatus('Please select a School / Centre Name.', 'status-error');
       return;
     }
-    if (!checkInVerified) {
+    const activityChecked = document.querySelector('input[name="activity"]:checked');
+    const stageChecked = document.querySelector('input[name="assessmentStage"]:checked');
+    const isResultsEntrySubmit = activityChecked && activityChecked.value === 'Assessment/Test conducted' &&
+      stageChecked && stageChecked.value === 'Results Entry';
+    if (!isResultsEntrySubmit && !checkInVerified) {
       showStatus('You must check in with "Capture Photo & Location" while at the centre (within ' + GEOFENCE_RADIUS_METERS + ' m) before submitting.', 'status-error');
       return;
     }
