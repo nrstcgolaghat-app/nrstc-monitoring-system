@@ -234,7 +234,8 @@
       </select>
     </fieldset>
 
-    <fieldset>
+    <div id="idOrderWrap" style="display:flex; flex-direction:column;">
+    <fieldset id="centreDetailsFieldset" style="order:1;">
       <legend>Centre (School) Details</legend>
 
       <div id="dataLoadStatus" style="font-size:13px; margin-bottom:8px;"></div>
@@ -263,7 +264,7 @@
       <input type="text" id="visitTime" disabled placeholder="Captured when you check in below">
     </fieldset>
 
-    <fieldset>
+    <fieldset id="evStatusFieldset" style="order:2;">
       <legend>EV (Educational Volunteer) Status</legend>
 
       <div class="mode-official">
@@ -282,6 +283,8 @@
       <div class="mode-ev">
         <label>Your PIN <span class="required">*</span></label>
         <input type="text" id="evPin" inputmode="numeric" maxlength="6" placeholder="Enter your personal PIN">
+        <button type="button" class="btn-blue" onclick="verifyEvPin()">Verify PIN</button>
+        <div id="pinStatus" style="font-size:13px; margin-top:6px;"></div>
       </div>
 
       <div class="mode-official">
@@ -307,7 +310,9 @@
         <input type="text" id="teachingMaterials" placeholder="e.g. bridge course workbooks, TLM kits">
       </div>
     </fieldset>
+    </div>
 
+    <div id="postAuthGate" style="display:none;">
     <fieldset class="mode-ev">
       <legend>EV Presence (Self Check-in)</legend>
 
@@ -447,6 +452,7 @@
       <label>Observations / Remarks</label>
       <textarea id="remarks" rows="4"></textarea>
     </fieldset>
+    </div>
 
     <button type="submit" id="submitBtn">Submit</button>
     <div id="statusBox"></div>
@@ -486,6 +492,71 @@ const reportTypeSelect = document.getElementById('reportType');
 const officialModeEls = document.querySelectorAll('.mode-official');
 const evModeEls = document.querySelectorAll('.mode-ev');
 
+let pinVerified = false;
+const postAuthGate = document.getElementById('postAuthGate');
+
+function updatePostAuthGate() {
+  const mode = document.getElementById('reportType').value;
+  const shouldShow = mode === 'Official' || (mode === 'EV' && pinVerified);
+  postAuthGate.style.display = shouldShow ? '' : 'none';
+}
+
+function resetPinVerification() {
+  pinVerified = false;
+  document.getElementById('pinStatus').textContent = '';
+  updatePostAuthGate();
+}
+
+function verifyEvPin() {
+  const pinStatus = document.getElementById('pinStatus');
+  const pinValue = document.getElementById('evPin').value.trim();
+  const evSelects = document.querySelectorAll('.evNameSelect');
+  const evName = evSelects.length > 0 ? evSelects[0].value : '';
+
+  if (!evName) {
+    pinStatus.textContent = 'Please select your name first.';
+    pinStatus.style.color = '#8f1f1f';
+    return;
+  }
+  if (!pinValue) {
+    pinStatus.textContent = 'Please enter your PIN.';
+    pinStatus.style.color = '#8f1f1f';
+    return;
+  }
+
+  pinStatus.textContent = 'Checking...';
+  pinStatus.style.color = '#1a3d6d';
+
+  fetch(WEB_APP_URL + '?action=checkEvPin&evName=' + encodeURIComponent(evName) + '&pin=' + encodeURIComponent(pinValue))
+    .then(function(res) { return res.json(); })
+    .then(function(result) {
+      if (result.valid) {
+        pinVerified = true;
+        const evRecord = EV_DATA.filter(function(ev) { return ev.name === evName && ev.active === "Active"; })[0];
+        const schoolIdx = evRecord ? SCHOOL_DATA.findIndex(function(s) { return s.udiseCode === evRecord.udiseCode; }) : -1;
+        if (schoolIdx !== -1) {
+          applySchoolSelection(String(schoolIdx));
+          pinStatus.textContent = 'PIN verified — ' + SCHOOL_DATA[schoolIdx].name + '. You can continue below.';
+        } else {
+          pinStatus.textContent = 'PIN verified, but no centre is currently on record for you. Please contact your DQM.';
+        }
+        pinStatus.style.color = '#145a2c';
+        updatePostAuthGate();
+      } else {
+        pinVerified = false;
+        pinStatus.textContent = 'Incorrect PIN. Please check and try again.';
+        pinStatus.style.color = '#8f1f1f';
+        updatePostAuthGate();
+      }
+    })
+    .catch(function() {
+      pinStatus.textContent = 'Network error while checking PIN. Please try again.';
+      pinStatus.style.color = '#8f1f1f';
+    });
+}
+
+document.getElementById('evPin').addEventListener('input', resetPinVerification);
+
 function applyReportMode(mode) {
   officialModeEls.forEach(function(el) { el.style.display = (mode === 'Official') ? '' : 'none'; });
   evModeEls.forEach(function(el) { el.style.display = (mode === 'EV') ? '' : 'none'; });
@@ -500,9 +571,29 @@ function applyReportMode(mode) {
     designationField.removeAttribute('required');
   }
 
+  const centreFs = document.getElementById('centreDetailsFieldset');
+  const evStatusFs = document.getElementById('evStatusFieldset');
+
+  if (mode === 'EV') {
+    // EV identifies themselves first; their centre auto-fills afterward
+    evStatusFs.style.order = 1;
+    centreFs.style.order = 2;
+    document.getElementById('schoolName').disabled = true;
+    applySchoolSelection("");
+    populateGlobalEvSelect();
+  } else {
+    // Officials pick a centre first, then see which EVs are assigned there
+    centreFs.style.order = 1;
+    evStatusFs.style.order = 2;
+    document.getElementById('schoolName').disabled = false;
+    document.getElementById('evNamesContainer').innerHTML = '<select class="evNameSelect"><option value="">-- Select School / Centre first --</option></select>';
+  }
+
+  if (mode !== 'EV') pinVerified = false;
+  updatePostAuthGate();
   updateEvPresenceVisibility();
 
-  if (document.getElementById('schoolName').value !== "") {
+  if (mode === 'Official' && document.getElementById('schoolName').value !== "") {
     renderEvNamesSelect();
   }
 }
@@ -902,6 +993,26 @@ const evNamesContainer = document.getElementById('evNamesContainer');
 const evPresentCountField = document.getElementById('evPresentCount');
 const evCountMsg = document.getElementById('evCountMsg');
 
+function populateGlobalEvSelect() {
+  const activeEvs = EV_DATA.filter(function(ev) { return ev.active === "Active"; });
+  const container = document.getElementById('evNamesContainer');
+  container.innerHTML = "";
+  const select = document.createElement('select');
+  select.className = 'evNameSelect';
+  const placeholder = document.createElement('option');
+  placeholder.value = "";
+  placeholder.textContent = "-- Select Your Name --";
+  select.appendChild(placeholder);
+  activeEvs.forEach(function(ev) {
+    const opt = document.createElement('option');
+    opt.value = ev.name;
+    opt.textContent = ev.name;
+    select.appendChild(opt);
+  });
+  select.addEventListener('change', resetPinVerification);
+  container.appendChild(select);
+}
+
 function buildEvSelectOptions(selectEl, currentValue) {
   const alreadyPicked = [];
   evNamesContainer.querySelectorAll('.evNameSelect').forEach(function(sel) {
@@ -930,6 +1041,7 @@ function refreshAllEvSelectOptions() {
 }
 
 function renderEvNamesSelect() {
+  resetPinVerification();
   evNamesContainer.innerHTML = "";
 
   if (currentSchoolEvs.length === 0) {
@@ -962,7 +1074,10 @@ function renderEvNamesSelect() {
     const select = document.createElement('select');
     select.className = 'evNameSelect';
     buildEvSelectOptions(select, "");
-    select.addEventListener('change', refreshAllEvSelectOptions);
+    select.addEventListener('change', function() {
+      refreshAllEvSelectOptions();
+      resetPinVerification();
+    });
     evNamesContainer.appendChild(select);
   }
 }
@@ -975,8 +1090,9 @@ function loadEvOptions(udiseCode) {
   renderEvNamesSelect();
 }
 
-schoolSelect.addEventListener('change', function() {
-  if (this.value === "") {
+function applySchoolSelection(value) {
+  document.getElementById('schoolName').value = value;
+  if (value === "") {
     document.getElementById('block').value = "";
     document.getElementById('cluster').value = "";
     document.getElementById('udiseCode').value = "";
@@ -990,12 +1106,9 @@ schoolSelect.addEventListener('change', function() {
     selectedSchoolLat = null;
     selectedSchoolLng = null;
     checkInVerified = false;
-    currentSchoolEvs = [];
-    evNamesContainer.innerHTML = '<select class="evNameSelect"><option value="">-- Select School / Centre first --</option></select>';
-    evCountMsg.textContent = '';
     return;
   }
-  const s = SCHOOL_DATA[parseInt(this.value, 10)];
+  const s = SCHOOL_DATA[parseInt(value, 10)];
   document.getElementById('block').value = s.block;
   document.getElementById('cluster').value = s.cluster;
   document.getElementById('udiseCode').value = s.udiseCode;
@@ -1003,8 +1116,18 @@ schoolSelect.addEventListener('change', function() {
   selectedSchoolLat = s.lat;
   selectedSchoolLng = s.lng;
   checkInVerified = false;
-  loadEvOptions(s.udiseCode);
   loadRoster(s.udiseCode);
+}
+
+schoolSelect.addEventListener('change', function() {
+  applySchoolSelection(this.value);
+  if (this.value === "") {
+    currentSchoolEvs = [];
+    evNamesContainer.innerHTML = '<select class="evNameSelect"><option value="">-- Select School / Centre first --</option></select>';
+    evCountMsg.textContent = '';
+    return;
+  }
+  loadEvOptions(SCHOOL_DATA[parseInt(this.value, 10)].udiseCode);
 });
 
 // Haversine distance in meters
