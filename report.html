@@ -234,30 +234,7 @@
       </select>
     </fieldset>
 
-    <fieldset class="mode-ev">
-      <legend>EV Presence (Self Check-in)</legend>
-
-      <label>Are you present at the centre today?</label>
-      <div class="radio-row">
-        <label><input type="radio" name="evPresent" value="Yes" checked> Yes</label>
-        <label><input type="radio" name="evPresent" value="No"> No</label>
-      </div>
-
-      <div id="absenceReasonWrap" style="display:none;">
-        <label>Reason for Absence</label>
-        <select id="absenceReason">
-          <option value="">-- Select Reason --</option>
-          <option value="Medical">Medical</option>
-          <option value="On Leave">On Leave</option>
-          <option value="Other">Other</option>
-        </select>
-
-        <label>Other reason (if applicable)</label>
-        <input type="text" id="absenceReasonOther" placeholder="Specify reason">
-      </div>
-    </fieldset>
-
-    <fieldset class="ev-present-only">
+    <fieldset>
       <legend>Centre (School) Details</legend>
 
       <div id="dataLoadStatus" style="font-size:13px; margin-bottom:8px;"></div>
@@ -286,7 +263,7 @@
       <input type="text" id="visitTime" disabled placeholder="Captured when you check in below">
     </fieldset>
 
-    <fieldset class="ev-present-only">
+    <fieldset>
       <legend>EV (Educational Volunteer) Status</legend>
 
       <div class="mode-official">
@@ -303,7 +280,7 @@
       </div>
 
       <div class="mode-ev">
-        <label>Your PIN</label>
+        <label>Your PIN <span class="required">*</span></label>
         <input type="text" id="evPin" inputmode="numeric" maxlength="6" placeholder="Enter your personal PIN">
       </div>
 
@@ -328,6 +305,29 @@
 
         <label>Teaching / self-learning materials used</label>
         <input type="text" id="teachingMaterials" placeholder="e.g. bridge course workbooks, TLM kits">
+      </div>
+    </fieldset>
+
+    <fieldset class="mode-ev">
+      <legend>EV Presence (Self Check-in)</legend>
+
+      <label>Are you present at the centre today?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="evPresent" value="Yes" checked> Yes</label>
+        <label><input type="radio" name="evPresent" value="No"> No</label>
+      </div>
+
+      <div id="absenceReasonWrap" style="display:none;">
+        <label>Reason for Absence</label>
+        <select id="absenceReason">
+          <option value="">-- Select Reason --</option>
+          <option value="Medical">Medical</option>
+          <option value="On Leave">On Leave</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <label>Other reason (if applicable)</label>
+        <input type="text" id="absenceReasonOther" placeholder="Specify reason">
       </div>
     </fieldset>
 
