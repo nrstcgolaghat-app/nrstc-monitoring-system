@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NRSTC Monitoring System</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+    color: #000000;
+  }
+  header {
+    background-color: #eaf3fb;
+    border-bottom: 2px solid #1a5aa8;
+    padding: 12px 15px;
+    text-align: center;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 20px;
+    color: #1a3d6d;
+  }
+  header p {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: #333333;
+  }
+  header p.sub {
+    font-size: 12px;
+    color: #555555;
+  }
+  .container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 15px;
+  }
+  fieldset {
+    border: 1px solid #1a5aa8;
+    margin-bottom: 15px;
+    padding: 10px 12px 14px 12px;
+  }
+  legend {
+    background-color: #eaf3fb;
+    border: 1px solid #1a5aa8;
+    padding: 3px 10px;
+    font-weight: bold;
+    color: #1a3d6d;
+    font-size: 15px;
+  }
+  label {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 3px;
+    font-size: 14px;
+    font-weight: bold;
+  }
+  input[type=text], input[type=number], input[type=date], select, textarea {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    border: 1px solid #999999;
+  }
+  input[readonly], input:disabled {
+    background-color: #f2f2f2;
+    color: #444444;
+  }
+  textarea { resize: vertical; }
+  .radio-row, .checkbox-row {
+    display: flex;
+    gap: 15px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+  .radio-row label, .checkbox-row label {
+    font-weight: normal;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+  }
+  .two-col {
+    display: flex;
+    gap: 10px;
+  }
+  .two-col > div {
+    flex: 1;
+  }
+  button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+    background-color: #1a7a3c;
+    border: 1px solid #145a2c;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  button:disabled {
+    background-color: #999999;
+    border-color: #777777;
+  }
+  .btn-blue {
+    background-color: #1a5aa8;
+    border-color: #123d73;
+  }
+  .btn-orange {
+    background-color: #c96a1a;
+    border-color: #8f4a10;
+  }
+  #statusBox {
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid #999999;
+    font-size: 14px;
+    display: none;
+  }
+  .status-success {
+    background-color: #eafaf0;
+    border-color: #1a7a3c !important;
+    color: #145a2c;
+  }
+  .status-error {
+    background-color: #fdeeee;
+    border-color: #b02a2a !important;
+    color: #8f1f1f;
+  }
+  .required { color: #b02a2a; }
+  #photoPreview {
+    width: 100%;
+    max-width: 300px;
+    border: 1px solid #999999;
+    margin-top: 10px;
+    display: none;
+  }
+  #locationText {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #1a3d6d;
+  }
+  .student-card {
+    border: 1px solid #1a5aa8;
+    border-radius: 0;
+    padding: 10px;
+    margin-top: 12px;
+  }
+  .student-card.row-white { background-color: #ffffff; }
+  .student-card.row-yellow { background-color: #fdf8e2; }
+  .student-card-header {
+    font-weight: bold;
+    font-size: 14px;
+    color: #1a3d6d;
+    border-bottom: 1px solid #999999;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+  }
+  .student-card label {
+    font-size: 13px;
+    margin-top: 8px;
+    margin-bottom: 2px;
+  }
+  .student-card select,
+  .student-card input[type=text] {
+    font-size: 14px;
+    padding: 6px;
+  }
+  .roster-radio {
+    display: flex;
+    gap: 10px;
+  }
+  .roster-radio label {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-weight: normal;
+    margin-top: 0;
+  }
+  #noRosterMsg {
+    font-size: 13px;
+    color: #666666;
+    margin-top: 8px;
+  }
+  .as-text { font-family: "Noto Sans Bengali", Arial, sans-serif; }
+  #paperOverlay {
+    display: none; position: fixed; inset: 0; background: #ffffff; z-index: 999; overflow-y: auto; padding: 20px;
+  }
+  #paperOverlay.open { display: block; }
+  .paper-header { text-align: center; border-bottom: 2px solid #000000; padding-bottom: 10px; margin-bottom: 15px; }
+  .paper-meta { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; font-size: 14px; margin-bottom: 15px; }
+  .paper-question { margin-bottom: 14px; }
+  .paper-question .qtext-en { font-weight: bold; }
+  .paper-question .qtext-as { font-family: "Noto Sans Bengali", Arial, sans-serif; color: #333333; margin-top: 2px; }
+  .paper-instructions { border: 1px solid #999999; padding: 8px; margin-bottom: 15px; font-size: 13px; }
+  @media print {
+    body * { visibility: hidden; }
+    #paperOverlay, #paperOverlay * { visibility: visible; }
+    #paperOverlay { position: absolute; top: 0; left: 0; }
+    .no-print { display: none !important; }
+  }
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: #666666;
+    padding: 15px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="logo.jpg" alt="Samagra Shiksha logo" style="max-width:260px; height:auto; margin-bottom:8px;">
+  <h1>NRSTC Monitoring System</h1>
+  <p>District Mission Coordinator &middot; Samagra Shiksha &middot; Golaghat, Assam</p>
+</header>
+
+<div class="container">
+  <form id="surveyForm">
+
+    <fieldset>
+      <legend>Who is filling this in?</legend>
+
+      <label>Reporting As <span class="required">*</span></label>
+      <select id="reportType" required>
+        <option value="">-- Select --</option>
+        <option value="Official">District / Block Official or DQM (Monitoring Visit)</option>
+        <option value="EV">EV (Daily Report)</option>
+      </select>
+    </fieldset>
+
+    <fieldset class="mode-ev">
+      <legend>EV Presence (Self Check-in)</legend>
+
+      <label>Are you present at the centre today?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="evPresent" value="Yes" checked> Yes</label>
+        <label><input type="radio" name="evPresent" value="No"> No</label>
+      </div>
+
+      <div id="absenceReasonWrap" style="display:none;">
+        <label>Reason for Absence</label>
+        <select id="absenceReason">
+          <option value="">-- Select Reason --</option>
+          <option value="Medical">Medical</option>
+          <option value="On Leave">On Leave</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <label>Other reason (if applicable)</label>
+        <input type="text" id="absenceReasonOther" placeholder="Specify reason">
+      </div>
+    </fieldset>
+
+    <fieldset class="ev-present-only">
+      <legend>Centre (School) Details</legend>
+
+      <div id="dataLoadStatus" style="font-size:13px; margin-bottom:8px;"></div>
+
+      <label>School / Centre Name <span class="required">*</span></label>
+      <select id="schoolName" required>
+        <option value="">-- Select School --</option>
+      </select>
+
+      <label>UDISE Code (Centre Code)</label>
+      <input type="text" id="udiseCode" readonly>
+
+      <label>Block</label>
+      <input type="text" id="block" readonly>
+
+      <label>Cluster</label>
+      <input type="text" id="cluster" readonly>
+
+      <label>School Management Type</label>
+      <input type="text" id="schoolType" readonly>
+
+      <label>Date of Visit (captured automatically)</label>
+      <input type="date" id="visitDate" disabled>
+
+      <label>Date &amp; Time of Visit (captured automatically)</label>
+      <input type="text" id="visitTime" disabled placeholder="Captured when you check in below">
+    </fieldset>
+
+    <fieldset class="ev-present-only">
+      <legend>EV (Educational Volunteer) Status</legend>
+
+      <div class="mode-official">
+        <label>How many EVs present today?</label>
+        <input type="number" id="evPresentCount" min="1" value="1">
+        <div id="evCountMsg" style="font-size:12px; color:#666666; margin-top:3px;"></div>
+      </div>
+
+      <label>EV Name(s) Present</label>
+      <div id="evNamesContainer">
+        <select class="evNameSelect">
+          <option value="">-- Select School / Centre first --</option>
+        </select>
+      </div>
+
+      <div class="mode-ev">
+        <label>Your PIN</label>
+        <input type="text" id="evPin" inputmode="numeric" maxlength="6" placeholder="Enter your personal PIN">
+      </div>
+
+      <div class="mode-official">
+        <label>Lesson plan available with EV</label>
+        <div class="radio-row">
+          <label><input type="radio" name="lessonPlan" value="Yes" checked> Yes</label>
+          <label><input type="radio" name="lessonPlan" value="No"> No</label>
+        </div>
+
+        <label>Periodic assessment of children conducted</label>
+        <div class="radio-row">
+          <label><input type="radio" name="assessmentConducted" value="Yes" checked> Yes</label>
+          <label><input type="radio" name="assessmentConducted" value="No"> No</label>
+        </div>
+
+        <label>Teaching-learning materials (TLM) in use</label>
+        <div class="radio-row">
+          <label><input type="radio" name="tlm" value="Yes" checked> Yes</label>
+          <label><input type="radio" name="tlm" value="No"> No</label>
+        </div>
+
+        <label>Teaching / self-learning materials used</label>
+        <input type="text" id="teachingMaterials" placeholder="e.g. bridge course workbooks, TLM kits">
+      </div>
+    </fieldset>
+
+    <fieldset class="mode-official">
+      <legend>Visit Details</legend>
+
+      <label>Official Name <span class="required">*</span></label>
+      <input type="text" id="officialName">
+
+      <label>Designation <span class="required">*</span></label>
+      <select id="designation">
+        <option value="">-- Select --</option>
+        <option value="DQM (District Quality Manager)">DQM (District Quality Manager)</option>
+        <option value="District Official">District Official</option>
+        <option value="Block Official">Block Official</option>
+      </select>
+    </fieldset>
+
+    <fieldset class="ev-present-only">
+      <legend>Today's Activities</legend>
+
+      <div class="checkbox-row">
+        <label><input type="radio" name="activity" value="Bridge course teaching" checked> Bridge course teaching</label>
+        <label><input type="radio" name="activity" value="Assessment/Test conducted"> Assessment/Test conducted</label>
+        <label><input type="radio" name="activity" value="Home visit"> Home visit (dropout tracking)</label>
+        <label><input type="radio" name="activity" value="Parent/SMC meeting"> Parent/SMC meeting</label>
+        <label><input type="radio" name="activity" value="TLM/material distribution"> TLM/material distribution</label>
+        <label><input type="radio" name="activity" value="Mainstreaming follow-up"> Mainstreaming follow-up</label>
+      </div>
+
+      <label>Other activity (if any)</label>
+      <input type="text" id="otherActivity">
+    </fieldset>
+
+    <fieldset class="ev-present-only" id="assessmentDetailsFieldset" style="display:none;">
+      <legend>Assessment / Test Details</legend>
+
+      <label>What is this visit for?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="assessmentStage" value="Test Day" checked> Test day (administering the test)</label>
+        <label><input type="radio" name="assessmentStage" value="Results Entry"> Sharing results (after copies are checked)</label>
+      </div>
+
+      <label>Select Exam</label>
+      <select id="examSelect">
+        <option value="">-- Select School first --</option>
+      </select>
+      <div id="examListMsgMain" style="font-size:12px; color:#666666; margin-top:3px;"></div>
+
+      <label>Subject(s) Tested</label>
+      <input type="text" id="subjectsTested" readonly>
+
+      <label>Maximum Marks</label>
+      <input type="number" id="maximumMarks" readonly>
+
+      <button type="button" class="btn-blue" id="viewPaperBtn" style="display:none;" onclick="viewQuestionPaper()">View / Print Question Paper</button>
+      <button type="button" class="btn-orange" id="goToMarksEntryBtn" style="display:none;" onclick="goToMarksEntry()">Go to Marks Entry Page &rarr;</button>
+    </fieldset>
+
+    <fieldset class="ev-present-only" id="studentListFieldset">
+      <legend>Student attendance and Daily Progress</legend>
+
+      <div class="two-col">
+        <div>
+          <label>Total enrollment (auto)</label>
+          <input type="number" id="totalEnrollment" readonly>
+        </div>
+        <div>
+          <label>Students present today (auto)</label>
+          <input type="number" id="studentsPresent" readonly>
+        </div>
+      </div>
+
+      <label>No. of children mainstreamed to regular school (auto)</label>
+      <input type="number" id="mainstreamedCount" readonly>
+
+      <div id="noRosterMsg">Select a school above to load its student list.</div>
+      <div id="rosterCards"></div>
+    </fieldset>
+
+    <fieldset class="mode-official">
+      <legend>Records</legend>
+
+      <label>SMC / centre management meeting records maintained</label>
+      <div class="radio-row">
+        <label><input type="radio" name="smcRecords" value="Yes" checked> Yes</label>
+        <label><input type="radio" name="smcRecords" value="No"> No</label>
+      </div>
+
+      <label>Mid-day meal register maintained</label>
+      <div class="radio-row">
+        <label><input type="radio" name="mdmRegister" value="Yes" checked> Yes</label>
+        <label><input type="radio" name="mdmRegister" value="No"> No</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="ev-present-only">
+      <legend>Geotagged Photo</legend>
+
+      <button type="button" id="capturePhotoBtn" class="btn-blue">Capture Photo &amp; Location</button>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
+      <img id="photoPreview" alt="Captured photo preview">
+      <div id="locationText"></div>
+    </fieldset>
+
+    <fieldset class="mode-official">
+      <legend>Overall Assessment</legend>
+
+      <label>Overall rating</label>
+      <select id="overallRating">
+        <option value="Excellent">Excellent</option>
+        <option value="Good">Good</option>
+        <option value="Satisfactory">Satisfactory</option>
+        <option value="Needs Improvement">Needs Improvement</option>
+      </select>
+
+      <label>Observations / Remarks</label>
+      <textarea id="remarks" rows="4"></textarea>
+    </fieldset>
+
+    <button type="submit" id="submitBtn">Submit</button>
+    <div id="statusBox"></div>
+  </form>
+</div>
+
+<footer>
+  Samagra Shiksha &middot; Golaghat<br>
+  <a href="index.html" style="font-size:12px; color:#666666;">Home</a> &middot;
+  <a href="exam-manager.html" style="font-size:12px; color:#666666;">Admin: Exam Manager</a>
+</footer>
+
+<div id="paperOverlay">
+  <div class="no-print" style="margin-bottom:10px;">
+    <button type="button" class="btn-blue" onclick="window.print()">Print</button>
+    <button type="button" class="btn-orange" onclick="closePaper()">Close</button>
+  </div>
+  <div id="paperBody"></div>
+</div>
+
+
+<script>
+// ---- CONFIGURE THIS: paste your deployed Google Apps Script Web App URL here ----
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwyB4C--Q-P0CeIqM_vx0kHLq1M2om7ww063JmSJ996j1RyAmeAIH8zmYSjyoAmyMJA/exec";
+// -----------------------------------------------------------------------------
+
+// ---- Master data is now fetched live from your Google Sheet (see loadMasterData below) ----
+let SCHOOL_DATA = [];
+let STUDENT_DATA = [];
+let EV_DATA = [];
+// ----------------------------------------------------------
+
+document.getElementById('visitDate').valueAsDate = new Date();
+
+// Reporter Type toggle
+const reportTypeSelect = document.getElementById('reportType');
+const officialModeEls = document.querySelectorAll('.mode-official');
+const evModeEls = document.querySelectorAll('.mode-ev');
+
+function applyReportMode(mode) {
+  officialModeEls.forEach(function(el) { el.style.display = (mode === 'Official') ? '' : 'none'; });
+  evModeEls.forEach(function(el) { el.style.display = (mode === 'EV') ? '' : 'none'; });
+
+  const officialNameField = document.getElementById('officialName');
+  const designationField = document.getElementById('designation');
+  if (mode === 'Official') {
+    officialNameField.setAttribute('required', 'required');
+    designationField.setAttribute('required', 'required');
+  } else {
+    officialNameField.removeAttribute('required');
+    designationField.removeAttribute('required');
+  }
+
+  updateEvPresenceVisibility();
+
+  if (document.getElementById('schoolName').value !== "") {
+    renderEvNamesSelect();
+  }
+}
+
+// EV absence handling
+const absenceReasonWrap = document.getElementById('absenceReasonWrap');
+const evPresentOnlyEls = document.querySelectorAll('.ev-present-only');
+
+function isEvAbsent() {
+  if (reportTypeSelect.value !== 'EV') return false;
+  const el = document.querySelector('input[name="evPresent"]:checked');
+  return el ? el.value === 'No' : false;
+}
+
+function updateEvPresenceVisibility() {
+  if (reportTypeSelect.value !== 'EV') {
+    absenceReasonWrap.style.display = 'none';
+    evPresentOnlyEls.forEach(function(el) { el.style.display = ''; });
+    updateStudentListVisibility();
+    applyActivityFieldsToRoster();
+    return;
+  }
+  const absent = isEvAbsent();
+  absenceReasonWrap.style.display = absent ? '' : 'none';
+  evPresentOnlyEls.forEach(function(el) { el.style.display = absent ? 'none' : ''; });
+  updateStudentListVisibility();
+  applyActivityFieldsToRoster();
+}
+
+const studentListFieldset = document.getElementById('studentListFieldset');
+const assessmentDetailsFieldset = document.getElementById('assessmentDetailsFieldset');
+
+function updateStudentListVisibility() {
+  if (reportTypeSelect.value === '' || isEvAbsent()) {
+    return;
+  }
+  const activity = document.querySelector('input[name="activity"]:checked');
+  const isAssessment = activity && activity.value === 'Assessment/Test conducted';
+  const stage = document.querySelector('input[name="assessmentStage"]:checked');
+  const isResultsStage = isAssessment && stage && stage.value === 'Results Entry';
+  const showRoster = activity && (activity.value === 'Bridge course teaching' || isAssessment) && !isResultsStage;
+  studentListFieldset.style.display = showRoster ? '' : 'none';
+  assessmentDetailsFieldset.style.display = isAssessment ? '' : 'none';
+}
+
+function applyActivityFieldsToRoster() {
+  const activity = document.querySelector('input[name="activity"]:checked');
+  const isAssessment = activity && activity.value === 'Assessment/Test conducted';
+  const rosterCardsEl = document.getElementById('rosterCards');
+  rosterCardsEl.querySelectorAll('.student-bridge-fields').forEach(function(el) {
+    el.style.display = isAssessment ? 'none' : '';
+  });
+}
+
+document.querySelectorAll('input[name="evPresent"]').forEach(function(r) {
+  r.addEventListener('change', updateEvPresenceVisibility);
+});
+
+document.querySelectorAll('input[name="activity"]').forEach(function(r) {
+  r.addEventListener('change', updateStudentListVisibility);
+  r.addEventListener('change', applyActivityFieldsToRoster);
+});
+
+document.querySelectorAll('input[name="assessmentStage"]').forEach(function(r) {
+  r.addEventListener('change', applyActivityFieldsToRoster);
+  r.addEventListener('change', updateStudentListVisibility);
+});
+
+reportTypeSelect.addEventListener('change', function() {
+  applyReportMode(this.value);
+});
+applyReportMode(reportTypeSelect.value);
+
+// Bridge course subjects by class level (used per-student in the roster)
+const BRIDGE_SUBJECTS_BY_CLASS = {
+  "Class I": ["Language", "Mathematics", "English", "Drawing"],
+  "Class II-V": ["Language", "Mathematics", "EVS", "Drawing", "Science"]
+};
+
+// populate school dropdown
+const schoolSelect = document.getElementById('schoolName');
+const dataLoadStatus = document.getElementById('dataLoadStatus');
+
+function populateSchoolDropdown() {
+  schoolSelect.innerHTML = '<option value="">-- Select School --</option>';
+  SCHOOL_DATA.forEach(function(s, idx) {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = s.name;
+    schoolSelect.appendChild(opt);
+  });
+}
+
+function loadMasterData() {
+  if (WEB_APP_URL.indexOf('PASTE_YOUR') !== -1) {
+    dataLoadStatus.textContent = 'Setup needed: paste your Apps Script Web App URL into this file to load live school/student/EV data.';
+    dataLoadStatus.style.color = '#8f1f1f';
+    loadCachedMasterData();
+    return;
+  }
+
+  dataLoadStatus.textContent = 'Loading school, student and EV list...';
+  dataLoadStatus.style.color = '#1a3d6d';
+
+  fetch(WEB_APP_URL + '?action=data')
+    .then(function(res) { return res.json(); })
+    .then(function(json) {
+      SCHOOL_DATA = json.schools || [];
+      STUDENT_DATA = json.students || [];
+      EV_DATA = json.evs || [];
+      try {
+        localStorage.setItem('nrstc_master_data', JSON.stringify({ schools: SCHOOL_DATA, students: STUDENT_DATA, evs: EV_DATA, savedAt: new Date().toISOString() }));
+      } catch (e) {}
+      populateSchoolDropdown();
+      dataLoadStatus.textContent = 'School list up to date (' + SCHOOL_DATA.length + ' centres).';
+      dataLoadStatus.style.color = '#145a2c';
+    })
+    .catch(function(err) {
+      dataLoadStatus.textContent = 'Could not reach the server — using last saved list. Check your internet connection.';
+      dataLoadStatus.style.color = '#8f1f1f';
+      loadCachedMasterData();
+    });
+}
+
+function loadCachedMasterData() {
+  try {
+    const cached = localStorage.getItem('nrstc_master_data');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      SCHOOL_DATA = parsed.schools || [];
+      STUDENT_DATA = parsed.students || [];
+      EV_DATA = parsed.evs || [];
+      populateSchoolDropdown();
+    }
+  } catch (e) {}
+}
+
+loadMasterData();
+
+// ---- Exam list (from Exam Manager) ----
+let EXAM_DATA = [];
+const examSelect = document.getElementById('examSelect');
+const examListMsgMain = document.getElementById('examListMsgMain');
+const viewPaperBtn = document.getElementById('viewPaperBtn');
+const goToMarksEntryBtn = document.getElementById('goToMarksEntryBtn');
+
+function loadExamList() {
+  examListMsgMain.textContent = 'Loading exam list...';
+  fetch(WEB_APP_URL + '?action=examList')
+    .then(function(res) { return res.json(); })
+    .then(function(json) {
+      EXAM_DATA = json.exams || [];
+      populateExamDropdown();
+      examListMsgMain.textContent = EXAM_DATA.length > 0
+        ? EXAM_DATA.length + ' released exam(s) available.'
+        : 'No exams have been released yet.';
+    })
+    .catch(function() {
+      examListMsgMain.textContent = 'Could not load exam list.';
+    });
+}
+
+function populateExamDropdown() {
+  examSelect.innerHTML = '<option value="">-- Select Exam --</option>';
+  EXAM_DATA.forEach(function(x, idx) {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = x.examName + ' — ' + x.subjectEN + ' (' + x.classLevel + ', ' + x.examDate + ')';
+    examSelect.appendChild(opt);
+  });
+}
+
+function updateAssessmentButtons() {
+  const stage = document.querySelector('input[name="assessmentStage"]:checked');
+  const isResultsStage = stage && stage.value === 'Results Entry';
+  if (examSelect.value === '') {
+    viewPaperBtn.style.display = 'none';
+    goToMarksEntryBtn.style.display = 'none';
+    return;
+  }
+  viewPaperBtn.style.display = isResultsStage ? 'none' : '';
+  goToMarksEntryBtn.style.display = isResultsStage ? '' : 'none';
+}
+
+examSelect.addEventListener('change', function() {
+  if (this.value === '') {
+    document.getElementById('subjectsTested').value = '';
+    document.getElementById('maximumMarks').value = '';
+    updateAssessmentButtons();
+    return;
+  }
+  const exam = EXAM_DATA[parseInt(this.value, 10)];
+  document.getElementById('subjectsTested').value = exam.subjectEN + (exam.subjectAS ? ' / ' + exam.subjectAS : '');
+  document.getElementById('maximumMarks').value = exam.totalMarks;
+  updateAssessmentButtons();
+});
+
+document.querySelectorAll('input[name="assessmentStage"]').forEach(function(r) {
+  r.addEventListener('change', updateAssessmentButtons);
+});
+
+function goToMarksEntry() {
+  if (examSelect.value === '') return;
+  const exam = EXAM_DATA[parseInt(examSelect.value, 10)];
+  const udise = document.getElementById('udiseCode').value;
+  const reportedBy = reportTypeSelect.value === 'EV' ? getEvNames() : document.getElementById('officialName').value;
+  window.open('exam-entry.html?examId=' + encodeURIComponent(exam.examId) + '&udiseCode=' + encodeURIComponent(udise) + '&reportedBy=' + encodeURIComponent(reportedBy || ''), '_blank');
+}
+
+function esc(s) {
+  return String(s === undefined || s === null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function viewQuestionPaper() {
+  if (examSelect.value === '') return;
+  const exam = EXAM_DATA[parseInt(examSelect.value, 10)];
+  fetch(WEB_APP_URL + '?action=examPaper&examId=' + encodeURIComponent(exam.examId))
+    .then(function(res) { return res.json(); })
+    .then(function(full) {
+      if (full.error) { alert(full.error); return; }
+      renderPaper(full);
+    })
+    .catch(function() { alert('Could not load the question paper.'); });
+}
+
+function renderPaper(exam) {
+  let html = '<div class="paper-header"><h2>' + esc(exam.examName) + '</h2>' +
+    '<p>' + esc(exam.subjectEN) + (exam.subjectAS ? ' / <span class="as-text">' + esc(exam.subjectAS) + '</span>' : '') + '</p></div>';
+  html += '<div class="paper-meta"><span>Class: ' + esc(exam.classLevel) + '</span>' +
+    '<span>Date: ' + esc(exam.examDate) + '</span>' +
+    '<span>Duration: ' + esc(exam.duration) + '</span>' +
+    '<span>Total Marks: ' + esc(exam.totalMarks) + '</span></div>';
+  if (exam.instructionsEN || exam.instructionsAS) {
+    html += '<div class="paper-instructions">';
+    if (exam.instructionsEN) html += '<div>' + esc(exam.instructionsEN) + '</div>';
+    if (exam.instructionsAS) html += '<div class="as-text">' + esc(exam.instructionsAS) + '</div>';
+    html += '</div>';
+  }
+  (exam.questions || []).forEach(function(q) {
+    html += '<div class="paper-question">' +
+      '<div class="qtext-en">' + esc(q.questionNo) + '. ' + esc(q.textEN) + ' (' + esc(q.marks) + ' marks)</div>' +
+      (q.textAS ? '<div class="qtext-as">' + esc(q.textAS) + '</div>' : '') +
+      '</div>';
+  });
+  document.getElementById('paperBody').innerHTML = html;
+  document.getElementById('paperOverlay').classList.add('open');
+}
+
+function closePaper() {
+  document.getElementById('paperOverlay').classList.remove('open');
+}
+
+loadExamList();
+
+const rosterCards = document.getElementById('rosterCards');
+const noRosterMsg = document.getElementById('noRosterMsg');
+const totalEnrollmentField = document.getElementById('totalEnrollment');
+const studentsPresentField = document.getElementById('studentsPresent');
+const mainstreamedCountField = document.getElementById('mainstreamedCount');
+
+function recalcPresentCount() {
+  const checked = rosterCards.querySelectorAll('input[type=radio][value="Present"]:checked');
+  studentsPresentField.value = checked.length;
+}
+
+function recalcMainstreamedCount() {
+  const checked = rosterCards.querySelectorAll('input[type=radio].mainstream-radio[value="Yes"]:checked');
+  mainstreamedCountField.value = checked.length;
+}
+
+function renderStudentSubjects(boxEl, classLevel) {
+  if (!boxEl) return;
+  const subjects = BRIDGE_SUBJECTS_BY_CLASS[classLevel] || [];
+  const idx = boxEl.getAttribute('data-idx');
+  boxEl.innerHTML = "";
+  subjects.forEach(function(subj) {
+    const label = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.name = 'studentSubject_' + idx;
+    cb.value = subj;
+    cb.checked = true;
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(' ' + subj));
+    boxEl.appendChild(label);
+  });
+}
+
+function loadRoster(udiseCode) {
+  const students = STUDENT_DATA.filter(function(st) { return st.udiseCode === udiseCode; });
+  rosterCards.innerHTML = "";
+
+  if (students.length === 0) {
+    noRosterMsg.style.display = 'block';
+    noRosterMsg.textContent = 'No dropout/never-enrolled students on record for this school.';
+    totalEnrollmentField.value = 0;
+    studentsPresentField.value = 0;
+    mainstreamedCountField.value = 0;
+    return;
+  }
+
+  noRosterMsg.style.display = 'none';
+  totalEnrollmentField.value = students.length;
+
+  students.forEach(function(st, i) {
+    const card = document.createElement('div');
+    card.className = 'student-card ' + ((i % 2 === 0) ? 'row-white' : 'row-yellow');
+    card.setAttribute('data-name', st.name);
+    card.setAttribute('data-status', st.status);
+    card.innerHTML =
+      '<div class="student-card-header">' + (i + 1) + '. ' + st.name + ' (' + st.status + ')</div>' +
+
+      '<label>Attendance</label>' +
+      '<div class="roster-radio">' +
+        '<label><input type="radio" name="student_' + i + '" value="Present" checked> Present</label>' +
+        '<label><input type="radio" name="student_' + i + '" value="Absent"> Absent</label>' +
+      '</div>' +
+
+      '<div class="student-progress-fields" data-idx="' + i + '">' +
+      '<label>Class Level</label>' +
+      '<select class="student-class-level" data-idx="' + i + '">' +
+        '<option value="Class I">Class I</option>' +
+        '<option value="Class II-V">Class II-V</option>' +
+      '</select>' +
+
+      '<div class="student-bridge-fields" data-idx="' + i + '">' +
+      '<label>Subjects Taught Today</label>' +
+      '<div class="checkbox-row student-subjects-box" data-idx="' + i + '"></div>' +
+
+      '<label>Topic taught / notes</label>' +
+      '<input type="text" class="student-topic" data-idx="' + i + '" placeholder="e.g. Alphabets A-E, Addition up to 20">' +
+
+      '<label>Bridge Course</label>' +
+      '<select class="bridge-select" data-idx="' + i + '">' +
+        '<option value="Ongoing">Ongoing</option>' +
+        '<option value="Completed">Completed</option>' +
+      '</select>' +
+
+      '<label>Progress</label>' +
+      '<select class="student-progress" data-idx="' + i + '">' +
+        '<option value="Improving">Improving</option>' +
+        '<option value="Steady">Steady</option>' +
+        '<option value="Needs Support">Needs Support</option>' +
+      '</select>' +
+      '</div>' +
+
+      '<label>Mainstreamed to Regular School</label>' +
+      '<div class="roster-radio">' +
+        '<label><input type="radio" class="mainstream-radio" name="mainstream_' + i + '" value="Yes"> Yes</label>' +
+        '<label><input type="radio" class="mainstream-radio" name="mainstream_' + i + '" value="No" checked> No</label>' +
+      '</div>' +
+
+      '<label>Regular School / Class (if mainstreamed)</label>' +
+      '<input type="text" class="mainstream-school" data-idx="' + i + '" placeholder="School / class">' +
+      '</div>';
+    rosterCards.appendChild(card);
+  });
+
+  rosterCards.querySelectorAll('select.student-class-level').forEach(function(sel) {
+    renderStudentSubjects(sel.closest('.student-card').querySelector('.student-subjects-box'), sel.value);
+    sel.addEventListener('change', function() {
+      renderStudentSubjects(this.closest('.student-card').querySelector('.student-subjects-box'), this.value);
+    });
+  });
+
+  applyActivityFieldsToRoster();
+
+  function toggleStudentCardFields(card) {
+    const att = card.querySelector('input[name^="student_"]:checked');
+    const fieldsWrap = card.querySelector('.student-progress-fields');
+    const isAbsent = att && att.value === 'Absent';
+    fieldsWrap.style.display = isAbsent ? 'none' : '';
+  }
+
+  rosterCards.querySelectorAll('.student-card').forEach(function(card) {
+    toggleStudentCardFields(card);
+  });
+
+  rosterCards.querySelectorAll('input[type=radio][name^="student_"]').forEach(function(r) {
+    r.addEventListener('change', function() {
+      recalcPresentCount();
+      toggleStudentCardFields(this.closest('.student-card'));
+    });
+  });
+  rosterCards.querySelectorAll('input.mainstream-radio').forEach(function(r) {
+    r.addEventListener('change', recalcMainstreamedCount);
+  });
+  recalcPresentCount();
+  recalcMainstreamedCount();
+}
+
+let selectedSchoolLat = null;
+let selectedSchoolLng = null;
+let currentSchoolEvs = [];
+const evNamesContainer = document.getElementById('evNamesContainer');
+const evPresentCountField = document.getElementById('evPresentCount');
+const evCountMsg = document.getElementById('evCountMsg');
+
+function buildEvSelectOptions(selectEl, currentValue) {
+  const alreadyPicked = [];
+  evNamesContainer.querySelectorAll('.evNameSelect').forEach(function(sel) {
+    if (sel !== selectEl && sel.value) alreadyPicked.push(sel.value);
+  });
+
+  selectEl.innerHTML = "";
+  const placeholder = document.createElement('option');
+  placeholder.value = "";
+  placeholder.textContent = "-- Select EV --";
+  selectEl.appendChild(placeholder);
+  currentSchoolEvs.forEach(function(ev) {
+    if (alreadyPicked.indexOf(ev.name) !== -1 && ev.name !== currentValue) return;
+    const opt = document.createElement('option');
+    opt.value = ev.name;
+    opt.textContent = ev.name;
+    selectEl.appendChild(opt);
+  });
+  selectEl.value = currentValue || "";
+}
+
+function refreshAllEvSelectOptions() {
+  evNamesContainer.querySelectorAll('.evNameSelect').forEach(function(sel) {
+    buildEvSelectOptions(sel, sel.value);
+  });
+}
+
+function renderEvNamesSelect() {
+  evNamesContainer.innerHTML = "";
+
+  if (currentSchoolEvs.length === 0) {
+    const select = document.createElement('select');
+    select.className = 'evNameSelect';
+    const opt = document.createElement('option');
+    opt.value = "";
+    opt.textContent = "-- No active EV assigned to this centre --";
+    select.appendChild(opt);
+    evNamesContainer.appendChild(select);
+    evPresentCountField.setAttribute('max', 0);
+    evCountMsg.textContent = 'No active EVs on record for this centre.';
+    return;
+  }
+
+  evPresentCountField.setAttribute('max', currentSchoolEvs.length);
+  evCountMsg.textContent = currentSchoolEvs.length + ' active EV(s) assigned to this centre.';
+
+  let count;
+  if (reportTypeSelect.value === 'EV') {
+    count = 1; // an EV reports only for themselves
+  } else {
+    count = parseInt(evPresentCountField.value, 10);
+    if (isNaN(count) || count < 1) count = 1;
+    if (count > currentSchoolEvs.length) count = currentSchoolEvs.length;
+    evPresentCountField.value = count;
+  }
+
+  for (let i = 0; i < count; i++) {
+    const select = document.createElement('select');
+    select.className = 'evNameSelect';
+    buildEvSelectOptions(select, "");
+    select.addEventListener('change', refreshAllEvSelectOptions);
+    evNamesContainer.appendChild(select);
+  }
+}
+
+evPresentCountField.addEventListener('input', renderEvNamesSelect);
+
+function loadEvOptions(udiseCode) {
+  const allEvs = EV_DATA.filter(function(ev) { return ev.udiseCode === udiseCode; });
+  currentSchoolEvs = allEvs.filter(function(ev) { return ev.active === "Active"; });
+  renderEvNamesSelect();
+}
+
+schoolSelect.addEventListener('change', function() {
+  if (this.value === "") {
+    document.getElementById('block').value = "";
+    document.getElementById('cluster').value = "";
+    document.getElementById('udiseCode').value = "";
+    document.getElementById('schoolType').value = "";
+    rosterCards.innerHTML = "";
+    noRosterMsg.style.display = 'block';
+    noRosterMsg.textContent = 'Select a school above to load its student list.';
+    totalEnrollmentField.value = "";
+    studentsPresentField.value = "";
+    mainstreamedCountField.value = "";
+    selectedSchoolLat = null;
+    selectedSchoolLng = null;
+    checkInVerified = false;
+    currentSchoolEvs = [];
+    evNamesContainer.innerHTML = '<select class="evNameSelect"><option value="">-- Select School / Centre first --</option></select>';
+    evCountMsg.textContent = '';
+    return;
+  }
+  const s = SCHOOL_DATA[parseInt(this.value, 10)];
+  document.getElementById('block').value = s.block;
+  document.getElementById('cluster').value = s.cluster;
+  document.getElementById('udiseCode').value = s.udiseCode;
+  document.getElementById('schoolType').value = s.schoolType;
+  selectedSchoolLat = s.lat;
+  selectedSchoolLng = s.lng;
+  checkInVerified = false;
+  loadEvOptions(s.udiseCode);
+  loadRoster(s.udiseCode);
+});
+
+// Haversine distance in meters
+function distanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = function(d) { return d * Math.PI / 180; };
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+const GEOFENCE_RADIUS_METERS = 100;
+let checkInVerified = false;
+
+// photo + GPS capture
+let capturedPhotoBase64 = "";
+let capturedLat = "";
+let capturedLng = "";
+let capturedAccuracy = "";
+
+const capturePhotoBtn = document.getElementById('capturePhotoBtn');
+const photoInput = document.getElementById('photoInput');
+const photoPreview = document.getElementById('photoPreview');
+const locationText = document.getElementById('locationText');
+
+function drawGeotagOverlay(ctx, canvas, lat, lng, dateTimeStr, statusLine) {
+  const lines = [];
+  lines.push(lat && lng ? ('GPS: ' + lat + ', ' + lng) : 'GPS: unavailable');
+  lines.push(dateTimeStr);
+  if (statusLine) lines.push(statusLine);
+
+  const fontSize = Math.max(12, Math.round(canvas.width / 45));
+  const lineHeight = fontSize + 4;
+  const padding = 8;
+  const boxHeight = (lines.length * lineHeight) + (padding * 2);
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  ctx.fillRect(0, canvas.height - boxHeight, canvas.width, boxHeight);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = fontSize + 'px Arial';
+  ctx.textBaseline = 'top';
+  lines.forEach(function(line, i) {
+    ctx.fillText(line, padding, canvas.height - boxHeight + padding + (i * lineHeight));
+  });
+}
+
+capturePhotoBtn.addEventListener('click', function() {
+  photoInput.click();
+});
+
+photoInput.addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+
+  if (schoolSelect.value === "") {
+    locationText.textContent = 'Please select the School / Centre first.';
+    locationText.style.color = '#8f1f1f';
+    return;
+  }
+
+  locationText.textContent = 'Getting location...';
+  locationText.style.color = '#1a3d6d';
+
+  let geoResult = null; // { lat, lng, dateTimeStr, statusLine } once geolocation resolves
+  let geoDone = false;
+  let canvasReady = null; // { ctx, canvas } once image is decoded
+  let imageFailed = false;
+
+  function finalizePhoto() {
+    if (!canvasReady) {
+      // No usable image (decode failed or unsupported format e.g. HEIC) — still allow check-in without a photo
+      if (geoDone) {
+        capturedPhotoBase64 = "";
+        photoPreview.style.display = 'none';
+        if (imageFailed) {
+          locationText.textContent += ' (Photo could not be processed — your phone may have saved it in a format this browser can\'t read. Location was still recorded.)';
+        }
+      }
+      return;
+    }
+    if (!geoDone) return; // wait for geolocation before drawing the overlay
+    const statusLine = geoResult ? geoResult.statusLine : 'GPS unavailable';
+    const lat = geoResult ? geoResult.lat : null;
+    const lng = geoResult ? geoResult.lng : null;
+    const dateTimeStr = geoResult ? geoResult.dateTimeStr : '';
+    drawGeotagOverlay(canvasReady.ctx, canvasReady.canvas, lat, lng, dateTimeStr, statusLine);
+    capturedPhotoBase64 = canvasReady.canvas.toDataURL('image/jpeg', 0.6);
+    photoPreview.src = capturedPhotoBase64;
+    photoPreview.style.display = 'block';
+  }
+
+  // Start geolocation immediately — independent of photo decoding
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      capturedLat = pos.coords.latitude.toFixed(6);
+      capturedLng = pos.coords.longitude.toFixed(6);
+      capturedAccuracy = Math.round(pos.coords.accuracy) + " m";
+      const now = new Date();
+      const dateTimeStr = now.toLocaleDateString([], {day: '2-digit', month: 'short', year: 'numeric'}) +
+        ', ' + now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+      document.getElementById('visitTime').value = dateTimeStr;
+      document.getElementById('visitDate').valueAsDate = now;
+
+      let statusLine = '';
+      if (selectedSchoolLat !== null && selectedSchoolLng !== null) {
+        const dist = Math.round(distanceMeters(pos.coords.latitude, pos.coords.longitude, selectedSchoolLat, selectedSchoolLng));
+        if (dist <= GEOFENCE_RADIUS_METERS) {
+          checkInVerified = true;
+          statusLine = 'Verified: ' + dist + ' m from centre';
+          locationText.textContent = 'Check-in verified: ' + dist + ' m from centre (within ' + GEOFENCE_RADIUS_METERS + ' m). Location: ' + capturedLat + ', ' + capturedLng;
+          locationText.style.color = '#145a2c';
+        } else {
+          checkInVerified = false;
+          statusLine = dist + ' m from centre (outside range)';
+          locationText.textContent = 'You are ' + dist + ' m from the centre — must be within ' + GEOFENCE_RADIUS_METERS + ' m to submit. Move closer and capture again.';
+          locationText.style.color = '#8f1f1f';
+        }
+      } else {
+        checkInVerified = false;
+        locationText.textContent = 'Location captured: ' + capturedLat + ', ' + capturedLng + ' (accuracy ~' + capturedAccuracy + ')';
+      }
+
+      geoResult = { lat: capturedLat, lng: capturedLng, dateTimeStr: dateTimeStr, statusLine: statusLine };
+      geoDone = true;
+      finalizePhoto();
+    }, function(err) {
+      checkInVerified = false;
+      if (err.code === 1) {
+        locationText.textContent = 'Location permission denied. Please allow Location access for this site in your phone/browser settings, then tap "Capture Photo & Location" again. Submission is blocked without a verified location.';
+      } else {
+        locationText.textContent = 'Could not get location: ' + err.message + '. Please move to an open area and try again.';
+      }
+      locationText.style.color = '#8f1f1f';
+
+      const now = new Date();
+      const dateTimeStr = now.toLocaleDateString([], {day: '2-digit', month: 'short', year: 'numeric'}) +
+        ', ' + now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+      document.getElementById('visitTime').value = dateTimeStr;
+      document.getElementById('visitDate').valueAsDate = now;
+
+      geoResult = { lat: null, lng: null, dateTimeStr: dateTimeStr, statusLine: 'GPS unavailable' };
+      geoDone = true;
+      finalizePhoto();
+    }, { enableHighAccuracy: true, timeout: 15000 });
+  } else {
+    locationText.textContent = 'Geolocation not supported on this device.';
+    locationText.style.color = '#8f1f1f';
+    geoDone = true;
+    finalizePhoto();
+  }
+
+  // Decode the photo in parallel — does not block the geolocation/check-in above
+  const reader = new FileReader();
+  reader.onerror = function() {
+    imageFailed = true;
+    finalizePhoto();
+  };
+  reader.onload = function(evt) {
+    const img = new Image();
+    img.onerror = function() {
+      imageFailed = true;
+      finalizePhoto();
+    };
+    img.onload = function() {
+      const maxWidth = 900;
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvasReady = { ctx: ctx, canvas: canvas };
+      finalizePhoto();
+    };
+    img.src = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+const form = document.getElementById('surveyForm');
+const submitBtn = document.getElementById('submitBtn');
+const statusBox = document.getElementById('statusBox');
+
+function getRadioValue(name) {
+  const el = document.querySelector('input[name="' + name + '"]:checked');
+  return el ? el.value : "";
+}
+
+function getCheckedActivity() {
+  const selected = document.querySelector('input[name="activity"]:checked');
+  return selected ? selected.value : "";
+}
+
+function getEvNames() {
+  const names = [];
+  evNamesContainer.querySelectorAll('.evNameSelect').forEach(function(sel) {
+    if (sel.value) names.push(sel.value);
+  });
+  return names.join(', ');
+}
+
+function showStatus(message, cls) {
+  statusBox.style.display = 'block';
+  statusBox.textContent = message;
+  statusBox.className = cls;
+}
+
+function buildStudentRecords() {
+  const cards = rosterCards.querySelectorAll('.student-card');
+  const records = [];
+  cards.forEach(function(card) {
+    const name = card.getAttribute('data-name');
+    const status = card.getAttribute('data-status');
+    const att = card.querySelector('input[name^="student_"]:checked');
+    const classLevel = card.querySelector('select.student-class-level');
+    const subjectBoxes = card.querySelectorAll('.student-subjects-box input[type=checkbox]:checked');
+    const topicField = card.querySelector('input.student-topic');
+    const bridgeSelect = card.querySelector('select.bridge-select');
+    const progress = card.querySelector('select.student-progress');
+    const mainstream = card.querySelector('input.mainstream-radio:checked');
+    const schoolField = card.querySelector('input.mainstream-school');
+    const marksField = card.querySelector('input.student-marks');
+    const resultStatusField = card.querySelector('select.student-result-status');
+    records.push({
+      studentName: name,
+      studentStatus: status,
+      attendance: att ? att.value : '',
+      classLevel: classLevel ? classLevel.value : '',
+      subjectsTaught: Array.from(subjectBoxes).map(function(cb) { return cb.value; }).join('/'),
+      topicTaught: topicField ? topicField.value : '',
+      bridgeCourseStatus: bridgeSelect ? bridgeSelect.value : '',
+      progress: progress ? progress.value : '',
+      marksObtained: marksField ? marksField.value : '',
+      resultStatus: resultStatusField ? resultStatusField.value : '',
+      mainstreamed: mainstream ? mainstream.value : '',
+      mainstreamSchool: schoolField ? schoolField.value : ''
+    });
+  });
+  return records;
+}
+
+form.addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  if (WEB_APP_URL.indexOf('PASTE_YOUR') !== -1) {
+    showStatus('Setup needed: the Apps Script Web App URL has not been configured yet in this file.', 'status-error');
+    return;
+  }
+
+  if (reportTypeSelect.value === "") {
+    showStatus('Please select who is filling this in (Official or EV).', 'status-error');
+    return;
+  }
+
+  if (reportTypeSelect.value === 'EV' && !document.getElementById('evPin').value.trim()) {
+    showStatus('Please enter your PIN.', 'status-error');
+    return;
+  }
+
+  const absent = isEvAbsent();
+
+  if (absent) {
+    const reason = document.getElementById('absenceReason').value;
+    if (!reason) {
+      showStatus('Please select a reason for absence.', 'status-error');
+      return;
+    }
+    if (reason === 'Other' && !document.getElementById('absenceReasonOther').value) {
+      showStatus('Please specify the reason for absence.', 'status-error');
+      return;
+    }
+  } else {
+    if (schoolSelect.value === "") {
+      showStatus('Please select a School / Centre Name.', 'status-error');
+      return;
+    }
+    const activityChecked = document.querySelector('input[name="activity"]:checked');
+    const stageChecked = document.querySelector('input[name="assessmentStage"]:checked');
+    const isResultsEntrySubmit = activityChecked && activityChecked.value === 'Assessment/Test conducted' &&
+      stageChecked && stageChecked.value === 'Results Entry';
+    if (!isResultsEntrySubmit && !checkInVerified) {
+      showStatus('You must check in with "Capture Photo & Location" while at the centre (within ' + GEOFENCE_RADIUS_METERS + ' m) before submitting.', 'status-error');
+      return;
+    }
+  }
+
+  const data = {
+    reportType: reportTypeSelect.value,
+    schoolName: schoolSelect.value !== "" ? SCHOOL_DATA[parseInt(schoolSelect.value, 10)].name : '',
+    udiseCode: document.getElementById('udiseCode').value,
+    block: document.getElementById('block').value,
+    cluster: document.getElementById('cluster').value,
+    schoolType: document.getElementById('schoolType').value,
+    officialName: document.getElementById('officialName').value,
+    evPresent: getRadioValue('evPresent'),
+    evPin: document.getElementById('evPin').value,
+    absenceReason: absent ? document.getElementById('absenceReason').value : '',
+    absenceReasonOther: absent ? document.getElementById('absenceReasonOther').value : '',
+    activities: getCheckedActivity(),
+    otherActivity: document.getElementById('otherActivity').value,
+    assessmentStage: getRadioValue('assessmentStage'),
+    examId: examSelect.value !== '' ? EXAM_DATA[parseInt(examSelect.value, 10)].examId : '',
+    subjectsTested: document.getElementById('subjectsTested').value,
+    maximumMarks: document.getElementById('maximumMarks').value,
+    designation: document.getElementById('designation').value,
+    visitDate: document.getElementById('visitDate').value,
+    visitTime: document.getElementById('visitTime').value,
+    evNames: getEvNames(),
+    teachingMaterials: document.getElementById('teachingMaterials').value,
+    assessmentConducted: getRadioValue('assessmentConducted'),
+    lessonPlan: getRadioValue('lessonPlan'),
+    tlm: getRadioValue('tlm'),
+    mainstreamedCount: document.getElementById('mainstreamedCount').value,
+    totalEnrollment: document.getElementById('totalEnrollment').value,
+    studentsPresent: document.getElementById('studentsPresent').value,
+    studentRecords: buildStudentRecords(),
+    smcRecords: getRadioValue('smcRecords'),
+    mdmRegister: getRadioValue('mdmRegister'),
+    overallRating: document.getElementById('overallRating').value,
+    remarks: document.getElementById('remarks').value,
+    photoBase64: capturedPhotoBase64,
+    latitude: capturedLat,
+    longitude: capturedLng,
+    gpsAccuracy: capturedAccuracy,
+    submittedAt: new Date().toISOString()
+  };
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Submitting...';
+  statusBox.style.display = 'none';
+
+  fetch(WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(data)
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(result) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit';
+    if (result.status === 'success') {
+      showStatus('Survey submitted successfully. Thank you.', 'status-success');
+      form.reset();
+      viewPaperBtn.style.display = 'none';
+      checkInVerified = false;
+      applyReportMode('');
+      document.getElementById('visitDate').valueAsDate = new Date();
+      document.getElementById('visitTime').value = "";
+      photoPreview.style.display = 'none';
+      locationText.textContent = '';
+      capturedPhotoBase64 = "";
+      capturedLat = "";
+      capturedLng = "";
+      capturedAccuracy = "";
+      document.getElementById('block').value = "";
+      document.getElementById('cluster').value = "";
+      document.getElementById('udiseCode').value = "";
+      document.getElementById('schoolType').value = "";
+      currentSchoolEvs = [];
+      evNamesContainer.innerHTML = '<select class="evNameSelect"><option value="">-- Select School / Centre first --</option></select>';
+      evCountMsg.textContent = '';
+      evPresentCountField.value = 1;
+      rosterCards.innerHTML = "";
+      noRosterMsg.style.display = 'block';
+      noRosterMsg.textContent = 'Select a school above to load its student list.';
+    } else {
+      showStatus('Submission failed: ' + (result.message || 'Unknown error'), 'status-error');
+    }
+  })
+  .catch(function(err) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit';
+    showStatus('Network error. Please check your connection and try again.', 'status-error');
+  });
+});
+</script>
+
+</body>
+</html>
