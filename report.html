@@ -708,6 +708,9 @@ function loadMasterData() {
         localStorage.setItem('nrstc_master_data', JSON.stringify({ schools: SCHOOL_DATA, students: STUDENT_DATA, evs: EV_DATA, savedAt: new Date().toISOString() }));
       } catch (e) {}
       populateSchoolDropdown();
+      if (document.getElementById('reportType').value === 'EV') {
+        populateGlobalEvSelect();
+      }
       dataLoadStatus.textContent = 'School list up to date (' + SCHOOL_DATA.length + ' centres).';
       dataLoadStatus.style.color = '#145a2c';
     })
@@ -727,6 +730,9 @@ function loadCachedMasterData() {
       STUDENT_DATA = parsed.students || [];
       EV_DATA = parsed.evs || [];
       populateSchoolDropdown();
+      if (document.getElementById('reportType').value === 'EV') {
+        populateGlobalEvSelect();
+      }
     }
   } catch (e) {}
 }
