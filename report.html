@@ -389,7 +389,7 @@
       <input type="number" id="maximumMarks" readonly>
 
       <button type="button" class="btn-blue" id="viewPaperBtn" style="display:none;" onclick="viewQuestionPaper()">View / Print Question Paper</button>
-      <button type="button" class="btn-orange" id="goToMarksEntryBtn" style="display:none;" onclick="goToMarksEntry()">Go to Marks Entry Page &rarr;</button>
+      <div id="resultsRosterMsg" style="font-size:12px; color:#666666; margin-top:6px;"></div>
     </fieldset>
 
     <fieldset class="ev-present-only" id="studentListFieldset">
@@ -454,6 +454,7 @@
     </fieldset>
 
     <button type="submit" id="submitBtn">Submit</button>
+    <button type="button" class="btn-orange" onclick="cancelForm()">Cancel</button>
     <div id="statusBox"></div>
     </div>
   </form>
@@ -653,20 +654,65 @@ function updateStudentListVisibility() {
   }
   const activity = document.querySelector('input[name="activity"]:checked');
   const isAssessment = activity && activity.value === 'Assessment/Test conducted';
-  const stage = document.querySelector('input[name="assessmentStage"]:checked');
-  const isResultsStage = isAssessment && stage && stage.value === 'Results Entry';
-  const showRoster = activity && (activity.value === 'Bridge course teaching' || isAssessment) && !isResultsStage;
+  const showRoster = activity && (activity.value === 'Bridge course teaching' || isAssessment);
   studentListFieldset.style.display = showRoster ? '' : 'none';
   assessmentDetailsFieldset.style.display = isAssessment ? '' : 'none';
+
+  const stage = document.querySelector('input[name="assessmentStage"]:checked');
+  const isResultsEntry = isAssessment && stage && stage.value === 'Results Entry';
+  if (isResultsEntry) {
+    loadResultsEntryRosterIfNeeded();
+  } else if (lastResultsRosterKey !== '') {
+    // switching away from Results Entry — go back to the normal full roster
+    lastResultsRosterKey = '';
+    currentExamForResults = null;
+    document.getElementById('resultsRosterMsg').textContent = '';
+    const udise = document.getElementById('udiseCode').value;
+    if (udise) loadRoster(udise);
+  }
 }
 
 function applyActivityFieldsToRoster() {
   const activity = document.querySelector('input[name="activity"]:checked');
   const isAssessment = activity && activity.value === 'Assessment/Test conducted';
+  const stage = document.querySelector('input[name="assessmentStage"]:checked');
+  const isResultsEntry = isAssessment && stage && stage.value === 'Results Entry';
   const rosterCardsEl = document.getElementById('rosterCards');
   rosterCardsEl.querySelectorAll('.student-bridge-fields').forEach(function(el) {
     el.style.display = isAssessment ? 'none' : '';
   });
+  rosterCardsEl.querySelectorAll('.student-results-fields').forEach(function(el) {
+    el.style.display = isResultsEntry ? '' : 'none';
+  });
+  if (isResultsEntry && currentExamForResults) {
+    rosterCardsEl.querySelectorAll('.student-results-questions').forEach(function(box) {
+      if (box.dataset.built === '1') return;
+      const idx = box.getAttribute('data-idx');
+      const questions = currentExamForResults.questions || [];
+      let html = '';
+      questions.forEach(function(q, qi) {
+        html += '<label>Q' + (qi + 1) + ' (max ' + q.marks + ')</label>' +
+          '<input type="number" class="student-result-q" data-idx="' + idx + '" data-qi="' + qi + '" data-max="' + q.marks + '" min="0" max="' + q.marks + '">';
+      });
+      box.innerHTML = html;
+      box.dataset.built = '1';
+      box.querySelectorAll('.student-result-q').forEach(function(inp) {
+        inp.addEventListener('input', function() { recalcStudentResultsTotal(idx); });
+      });
+    });
+  }
+}
+
+function recalcStudentResultsTotal(idx) {
+  let total = 0;
+  document.querySelectorAll('.student-result-q[data-idx="' + idx + '"]').forEach(function(inp) {
+    total += parseInt(inp.value, 10) || 0;
+  });
+  const totalMarks = Number(currentExamForResults ? currentExamForResults.totalMarks : 0) || 0;
+  const pct = totalMarks ? Math.round(total / totalMarks * 100) : 0;
+  const grade = pct >= 80 ? 'A' : pct >= 60 ? 'B' : pct >= 45 ? 'C' : pct >= 33 ? 'D' : 'F';
+  const totalEl = document.querySelector('.student-results-total[data-idx="' + idx + '"]');
+  if (totalEl) totalEl.textContent = total + ' / ' + totalMarks + ' (' + pct + '%, Grade ' + grade + ')';
 }
 
 document.querySelectorAll('input[name="evPresent"]').forEach(function(r) {
@@ -765,7 +811,6 @@ let EXAM_DATA = [];
 const examSelect = document.getElementById('examSelect');
 const examListMsgMain = document.getElementById('examListMsgMain');
 const viewPaperBtn = document.getElementById('viewPaperBtn');
-const goToMarksEntryBtn = document.getElementById('goToMarksEntryBtn');
 
 function loadExamList() {
   examListMsgMain.textContent = 'Loading exam list...';
@@ -794,15 +839,12 @@ function populateExamDropdown() {
 }
 
 function updateAssessmentButtons() {
-  const stage = document.querySelector('input[name="assessmentStage"]:checked');
-  const isResultsStage = stage && stage.value === 'Results Entry';
   if (examSelect.value === '') {
     viewPaperBtn.style.display = 'none';
-    goToMarksEntryBtn.style.display = 'none';
     return;
   }
-  viewPaperBtn.style.display = isResultsStage ? 'none' : '';
-  goToMarksEntryBtn.style.display = isResultsStage ? '' : 'none';
+  viewPaperBtn.style.display = '';
+  loadResultsEntryRosterIfNeeded();
 }
 
 examSelect.addEventListener('change', function() {
@@ -822,13 +864,7 @@ document.querySelectorAll('input[name="assessmentStage"]').forEach(function(r) {
   r.addEventListener('change', updateAssessmentButtons);
 });
 
-function goToMarksEntry() {
-  if (examSelect.value === '') return;
-  const exam = EXAM_DATA[parseInt(examSelect.value, 10)];
-  const udise = document.getElementById('udiseCode').value;
-  const reportedBy = reportTypeSelect.value === 'EV' ? getEvNames() : document.getElementById('officialName').value;
-  window.open('exam-entry.html?examId=' + encodeURIComponent(exam.examId) + '&udiseCode=' + encodeURIComponent(udise) + '&reportedBy=' + encodeURIComponent(reportedBy || ''), '_blank');
-}
+
 
 function esc(s) {
   return String(s === undefined || s === null ? '' : s)
@@ -912,11 +948,15 @@ function renderStudentSubjects(boxEl, classLevel) {
 
 function loadRoster(udiseCode) {
   const students = STUDENT_DATA.filter(function(st) { return st.udiseCode === udiseCode; });
+  renderRosterCards(students, students.length === 0 ? 'No dropout/never-enrolled students on record for this school.' : '');
+}
+
+function renderRosterCards(students, emptyMessage) {
   rosterCards.innerHTML = "";
 
   if (students.length === 0) {
     noRosterMsg.style.display = 'block';
-    noRosterMsg.textContent = 'No dropout/never-enrolled students on record for this school.';
+    noRosterMsg.textContent = emptyMessage || 'Select a school above to load its student list.';
     totalEnrollmentField.value = 0;
     studentsPresentField.value = 0;
     mainstreamedCountField.value = 0;
@@ -968,6 +1008,13 @@ function loadRoster(udiseCode) {
       '</select>' +
       '</div>' +
 
+      '<div class="student-results-fields" data-idx="' + i + '" style="display:none;">' +
+      '<div class="student-results-questions" data-idx="' + i + '"></div>' +
+      '<label>Total / Grade</label>' +
+      '<div class="student-results-total" data-idx="' + i + '" style="font-weight:bold;">—</div>' +
+      '</div>' +
+      '</div>' +
+
       '<label>Mainstreamed to Regular School</label>' +
       '<div class="roster-radio">' +
         '<label><input type="radio" class="mainstream-radio" name="mainstream_' + i + '" value="Yes"> Yes</label>' +
@@ -975,8 +1022,7 @@ function loadRoster(udiseCode) {
       '</div>' +
 
       '<label>Regular School / Class (if mainstreamed)</label>' +
-      '<input type="text" class="mainstream-school" data-idx="' + i + '" placeholder="School / class">' +
-      '</div>';
+      '<input type="text" class="mainstream-school" data-idx="' + i + '" placeholder="School / class">';
     rosterCards.appendChild(card);
   });
 
@@ -1011,6 +1057,65 @@ function loadRoster(udiseCode) {
   });
   recalcPresentCount();
   recalcMainstreamedCount();
+}
+
+let currentExamForResults = null;
+let lastResultsRosterKey = '';
+
+function loadResultsEntryRosterIfNeeded() {
+  const activity = document.querySelector('input[name="activity"]:checked');
+  const isAssessment = activity && activity.value === 'Assessment/Test conducted';
+  const stage = document.querySelector('input[name="assessmentStage"]:checked');
+  const isResultsEntry = isAssessment && stage && stage.value === 'Results Entry';
+  const resultsMsg = document.getElementById('resultsRosterMsg');
+
+  if (!isResultsEntry || examSelect.value === '') {
+    resultsMsg.textContent = '';
+    return;
+  }
+
+  const exam = EXAM_DATA[parseInt(examSelect.value, 10)];
+  const udise = document.getElementById('udiseCode').value;
+  if (!udise) { resultsMsg.textContent = ''; return; }
+
+  const key = exam.examId + '|' + udise;
+  if (key === lastResultsRosterKey) return; // already loaded for this exam+centre
+  lastResultsRosterKey = key;
+
+  resultsMsg.textContent = 'Checking exam-day attendance...';
+  resultsMsg.style.color = '#1a3d6d';
+
+  fetch(WEB_APP_URL + '?action=examAttendanceRoster&examId=' + encodeURIComponent(exam.examId) + '&udiseCode=' + encodeURIComponent(udise))
+    .then(function(res) { return res.json(); })
+    .then(function(attData) {
+      if (!attData.recorded) {
+        resultsMsg.textContent = 'No exam-day attendance recorded yet for this exam at your centre. Please report attendance on the "Test day" first (a separate day\'s report), then come back here to enter marks.';
+        resultsMsg.style.color = '#8f1f1f';
+        renderRosterCards([], ' ');
+        return;
+      }
+      if (attData.students.length === 0) {
+        resultsMsg.textContent = 'Attendance was recorded for this exam, but no students were marked present that day.';
+        resultsMsg.style.color = '#8f1f1f';
+        renderRosterCards([], ' ');
+        return;
+      }
+      resultsMsg.textContent = '';
+      fetch(WEB_APP_URL + '?action=examPaper&examId=' + encodeURIComponent(exam.examId))
+        .then(function(res2) { return res2.json(); })
+        .then(function(fullExam) {
+          currentExamForResults = fullExam;
+          renderRosterCards(attData.students, '');
+        })
+        .catch(function() {
+          resultsMsg.textContent = 'Could not load the exam questions. Please try again.';
+          resultsMsg.style.color = '#8f1f1f';
+        });
+    })
+    .catch(function() {
+      resultsMsg.textContent = 'Could not check attendance records. Please try again.';
+      resultsMsg.style.color = '#8f1f1f';
+    });
 }
 
 let selectedSchoolLat = null;
@@ -1381,8 +1486,31 @@ function buildStudentRecords() {
     const progress = card.querySelector('select.student-progress');
     const mainstream = card.querySelector('input.mainstream-radio:checked');
     const schoolField = card.querySelector('input.mainstream-school');
-    const marksField = card.querySelector('input.student-marks');
-    const resultStatusField = card.querySelector('select.student-result-status');
+
+    const isAbsent = att && att.value === 'Absent';
+    const resultQInputs = card.querySelectorAll('.student-result-q');
+    let marksObtained = '';
+    let marksBreakdown = '';
+    let totalMarksForRecord = '';
+    let resultStatus = '';
+    if (resultQInputs.length > 0) {
+      totalMarksForRecord = currentExamForResults ? currentExamForResults.totalMarks : '';
+      if (isAbsent) {
+        resultStatus = '';
+      } else {
+        let total = 0;
+        const parts = [];
+        resultQInputs.forEach(function(inp) {
+          const val = parseInt(inp.value, 10) || 0;
+          total += val;
+          parts.push('Q' + (parseInt(inp.dataset.qi, 10) + 1) + ':' + val);
+        });
+        marksObtained = total;
+        marksBreakdown = parts.join(', ');
+        resultStatus = 'Result Declared';
+      }
+    }
+
     records.push({
       studentName: name,
       studentStatus: status,
@@ -1392,13 +1520,47 @@ function buildStudentRecords() {
       topicTaught: topicField ? topicField.value : '',
       bridgeCourseStatus: bridgeSelect ? bridgeSelect.value : '',
       progress: progress ? progress.value : '',
-      marksObtained: marksField ? marksField.value : '',
-      resultStatus: resultStatusField ? resultStatusField.value : '',
+      marksObtained: marksObtained,
+      marksBreakdown: marksBreakdown,
+      totalMarks: totalMarksForRecord,
+      resultStatus: resultStatus,
       mainstreamed: mainstream ? mainstream.value : '',
       mainstreamSchool: schoolField ? schoolField.value : ''
     });
   });
   return records;
+}
+
+function resetEntireForm() {
+  form.reset();
+  viewPaperBtn.style.display = 'none';
+  checkInVerified = false;
+  applyReportMode('');
+  document.getElementById('visitDate').valueAsDate = new Date();
+  document.getElementById('visitTime').value = "";
+  photoPreview.style.display = 'none';
+  locationText.textContent = '';
+  capturedPhotoBase64 = "";
+  capturedLat = "";
+  capturedLng = "";
+  capturedAccuracy = "";
+  document.getElementById('block').value = "";
+  document.getElementById('cluster').value = "";
+  document.getElementById('udiseCode').value = "";
+  document.getElementById('schoolType').value = "";
+  currentSchoolEvs = [];
+  evNamesContainer.innerHTML = '<select class="evNameSelect"><option value="">-- Select School / Centre first --</option></select>';
+  evCountMsg.textContent = '';
+  evPresentCountField.value = 1;
+  rosterCards.innerHTML = "";
+  noRosterMsg.style.display = 'block';
+  noRosterMsg.textContent = 'Select a school above to load its student list.';
+}
+
+function cancelForm() {
+  if (!confirm('Cancel and clear everything you\'ve entered? This cannot be undone.')) return;
+  resetEntireForm();
+  statusBox.style.display = 'none';
 }
 
 form.addEventListener('submit', function(e) {
@@ -1502,29 +1664,7 @@ form.addEventListener('submit', function(e) {
     submitBtn.textContent = 'Submit';
     if (result.status === 'success') {
       showStatus('Survey submitted successfully. Thank you.', 'status-success');
-      form.reset();
-      viewPaperBtn.style.display = 'none';
-      checkInVerified = false;
-      applyReportMode('');
-      document.getElementById('visitDate').valueAsDate = new Date();
-      document.getElementById('visitTime').value = "";
-      photoPreview.style.display = 'none';
-      locationText.textContent = '';
-      capturedPhotoBase64 = "";
-      capturedLat = "";
-      capturedLng = "";
-      capturedAccuracy = "";
-      document.getElementById('block').value = "";
-      document.getElementById('cluster').value = "";
-      document.getElementById('udiseCode').value = "";
-      document.getElementById('schoolType').value = "";
-      currentSchoolEvs = [];
-      evNamesContainer.innerHTML = '<select class="evNameSelect"><option value="">-- Select School / Centre first --</option></select>';
-      evCountMsg.textContent = '';
-      evPresentCountField.value = 1;
-      rosterCards.innerHTML = "";
-      noRosterMsg.style.display = 'block';
-      noRosterMsg.textContent = 'Select a school above to load its student list.';
+      resetEntireForm();
     } else {
       showStatus('Submission failed: ' + (result.message || 'Unknown error'), 'status-error');
     }
