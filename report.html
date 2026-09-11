@@ -493,16 +493,18 @@ const officialModeEls = document.querySelectorAll('.mode-official');
 const evModeEls = document.querySelectorAll('.mode-ev');
 
 let pinVerified = false;
+let dailyLocked = false;
 const postAuthGate = document.getElementById('postAuthGate');
 
 function updatePostAuthGate() {
   const mode = document.getElementById('reportType').value;
-  const shouldShow = mode === 'Official' || (mode === 'EV' && pinVerified);
+  const shouldShow = mode === 'Official' || (mode === 'EV' && pinVerified && !dailyLocked);
   postAuthGate.style.display = shouldShow ? '' : 'none';
 }
 
 function resetPinVerification() {
   pinVerified = false;
+  dailyLocked = false;
   document.getElementById('pinStatus').textContent = '';
   updatePostAuthGate();
 }
@@ -530,24 +532,43 @@ function verifyEvPin() {
   fetch(WEB_APP_URL + '?action=checkEvPin&evName=' + encodeURIComponent(evName) + '&pin=' + encodeURIComponent(pinValue))
     .then(function(res) { return res.json(); })
     .then(function(result) {
-      if (result.valid) {
-        pinVerified = true;
-        const evRecord = EV_DATA.filter(function(ev) { return ev.name === evName && ev.active === "Active"; })[0];
-        const schoolIdx = evRecord ? SCHOOL_DATA.findIndex(function(s) { return s.udiseCode === evRecord.udiseCode; }) : -1;
-        if (schoolIdx !== -1) {
-          applySchoolSelection(String(schoolIdx));
-          pinStatus.textContent = 'PIN verified — ' + SCHOOL_DATA[schoolIdx].name + '. You can continue below.';
-        } else {
-          pinStatus.textContent = 'PIN verified, but no centre is currently on record for you. Please contact your DQM.';
-        }
-        pinStatus.style.color = '#145a2c';
-        updatePostAuthGate();
-      } else {
+      if (!result.valid) {
         pinVerified = false;
         pinStatus.textContent = 'Incorrect PIN. Please check and try again.';
         pinStatus.style.color = '#8f1f1f';
         updatePostAuthGate();
+        return;
       }
+      pinVerified = true;
+      pinStatus.textContent = 'Checking today\'s submission status...';
+      pinStatus.style.color = '#1a3d6d';
+
+      fetch(WEB_APP_URL + '?action=checkEvDailyLock&evName=' + encodeURIComponent(evName))
+        .then(function(res2) { return res2.json(); })
+        .then(function(lockResult) {
+          if (lockResult.alreadySubmitted) {
+            dailyLocked = true;
+            pinStatus.textContent = 'You have already submitted your report for today. Come back tomorrow.';
+            pinStatus.style.color = '#8f1f1f';
+            updatePostAuthGate();
+            return;
+          }
+          dailyLocked = false;
+          const evRecord = EV_DATA.filter(function(ev) { return ev.name === evName && ev.active === "Active"; })[0];
+          const schoolIdx = evRecord ? SCHOOL_DATA.findIndex(function(s) { return s.udiseCode === evRecord.udiseCode; }) : -1;
+          if (schoolIdx !== -1) {
+            applySchoolSelection(String(schoolIdx));
+            pinStatus.textContent = 'PIN verified — ' + SCHOOL_DATA[schoolIdx].name + '. You can continue below.';
+          } else {
+            pinStatus.textContent = 'PIN verified, but no centre is currently on record for you. Please contact your DQM.';
+          }
+          pinStatus.style.color = '#145a2c';
+          updatePostAuthGate();
+        })
+        .catch(function() {
+          pinStatus.textContent = 'Network error while checking today\'s submission status. Please try again.';
+          pinStatus.style.color = '#8f1f1f';
+        });
     })
     .catch(function() {
       pinStatus.textContent = 'Network error while checking PIN. Please try again.';
@@ -589,7 +610,7 @@ function applyReportMode(mode) {
     document.getElementById('evNamesContainer').innerHTML = '<select class="evNameSelect"><option value="">-- Select School / Centre first --</option></select>';
   }
 
-  if (mode !== 'EV') pinVerified = false;
+  if (mode !== 'EV') { pinVerified = false; dailyLocked = false; }
   updatePostAuthGate();
   updateEvPresenceVisibility();
 
