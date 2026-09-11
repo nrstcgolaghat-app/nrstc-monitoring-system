@@ -684,6 +684,17 @@ function applyActivityFieldsToRoster() {
   rosterCardsEl.querySelectorAll('.student-results-fields').forEach(function(el) {
     el.style.display = isResultsEntry ? '' : 'none';
   });
+  rosterCardsEl.querySelectorAll('input[name^="student_"]').forEach(function(radio) {
+    if (isResultsEntry) {
+      if (radio.value === 'Absent') {
+        radio.disabled = true;
+      } else if (radio.value === 'Present') {
+        radio.checked = true;
+      }
+    } else {
+      radio.disabled = false;
+    }
+  });
   if (isResultsEntry && currentExamForResults) {
     rosterCardsEl.querySelectorAll('.student-results-questions').forEach(function(box) {
       if (box.dataset.built === '1') return;
