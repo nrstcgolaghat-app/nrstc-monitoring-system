@@ -65,6 +65,28 @@
   .att-btn.p-active { background-color: #eafaf0; border-color: #1a7a3c; color: #145a2c; }
   .att-btn.a-active { background-color: #fdeeee; border-color: #b02a2a; color: #8f1f1f; }
 
+  .rpt { padding: 20px 24px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #000000; background: #ffffff; page-break-after: always; }
+  .rpt:last-child { page-break-after: auto; }
+  .rpt-hdr { text-align: center; border-bottom: 2px solid #1a5aa8; padding-bottom: 10px; margin-bottom: 15px; }
+  .rpt-hdr img { max-width: 90px; }
+  .rpt-hdr h2 { margin: 4px 0; color: #1a3d6d; }
+  .rpt-banner { text-align: center; background-color: #eaf3fb; border: 1px solid #1a5aa8; padding: 6px; margin-bottom: 15px; font-weight: bold; color: #1a3d6d; }
+  .rpt-info { font-size: 13px; margin-bottom: 15px; }
+  .rpt-info div { margin-bottom: 4px; }
+  .rpt-info .k { font-weight: bold; }
+  .rpt-summary { display: flex; gap: 10px; margin-bottom: 20px; text-align: center; }
+  .rsb { flex: 1; border: 1px solid #1a5aa8; padding: 10px; }
+  .rsb b { display: block; font-size: 20px; color: #1a5aa8; }
+  .rsb span { font-size: 11px; color: #666666; }
+  .rpt-sign { display: flex; gap: 14px; margin-top: 26px; font-size: 12px; text-align: center; }
+  .rpt-sign .sl { border-top: 1px solid #000000; padding-top: 5px; margin-top: 30px; }
+  .rpt-foot { border-top: 1px solid #999999; padding-top: 8px; font-size: 11px; color: #666666; text-align: center; margin-top: 12px; }
+  @media print {
+    body * { visibility: hidden; }
+    #reportOverlay, #reportOverlay * { visibility: visible; }
+    #reportOverlay { position: absolute; top: 0; left: 0; }
+    .no-print { display: none !important; }
+  }
   footer { text-align: center; font-size: 12px; color: #666666; padding: 15px; }
 </style>
 </head>
@@ -105,7 +127,7 @@
   <div id="marksCard" style="display:none;">
     <fieldset>
       <legend id="examHeadTitle">Attendance &amp; Marks</legend>
-      <button type="button" onclick="markAllPresent()">Mark all present</button>
+      <button type="button" id="markAllBtn" onclick="markAllPresent()">Mark all present</button>
       <span id="attCount" style="font-size:13px; color:#666666; margin-left:8px;"></span>
       <div style="overflow-x:auto">
         <table class="stbl" id="marksTable">
@@ -115,8 +137,9 @@
       </div>
     </fieldset>
     <div id="saveStatus"></div>
-    <button onclick="saveMarks()">Save Marks</button>
+    <button id="saveMarksBtn" onclick="saveMarks()">Save Marks</button>
     <button type="button" class="btn-orange" id="downloadExcelBtn" style="display:none;" onclick="downloadExcelReport()">Download Excel Report</button>
+    <button type="button" class="btn-orange" id="printAllCardsBtn" style="display:none;" onclick="printAllCards()">Print All Report Cards</button>
   </div>
 
   <footer>Samagra Shiksha &middot; Golaghat &middot; NRSTC Marks Entry</footer>
@@ -201,28 +224,39 @@ examSelect.addEventListener('change', loadRoster);
 function loadRoster(){
   document.getElementById('marksCard').style.display = 'none';
   document.getElementById('downloadExcelBtn').style.display = 'none';
+  document.getElementById('printAllCardsBtn').style.display = 'none';
   document.getElementById('saveStatus').innerHTML = '';
   lastSavedReport = null;
   if(schoolSelect.value === '' || examSelect.value === '') return;
 
   const school = SCHOOL_DATA[parseInt(schoolSelect.value, 10)];
-  currentStudents = STUDENT_DATA.filter(function(st){ return st.udiseCode === school.udiseCode; });
 
-  if(currentStudents.length === 0){
-    showLoadMsg('No dropout/never-enrolled students on record for this school.', 'status-warn');
-    return;
-  }
-
-  showLoadMsg('Loading exam paper...', 'status-info');
-  fetch(WEB_APP_URL + '?action=examPaper&examId=' + encodeURIComponent(examSelect.value))
+  showLoadMsg('Checking attendance recorded for this exam...', 'status-info');
+  fetch(WEB_APP_URL + '?action=examAttendanceRoster&examId=' + encodeURIComponent(examSelect.value) + '&udiseCode=' + encodeURIComponent(school.udiseCode))
     .then(function(res){ return res.json(); })
-    .then(function(exam){
-      if(exam.error){ showLoadMsg(exam.error, 'status-error'); return; }
-      currentExam = exam;
-      loadMsg.style.display = 'none';
-      renderMarksTable(school);
+    .then(function(attData){
+      if(!attData.recorded){
+        showLoadMsg('No attendance has been recorded for this exam at this centre yet. Please complete the "Test day" check-in in the Field Report first, then come back here to enter marks.', 'status-warn');
+        return;
+      }
+      currentStudents = attData.students || [];
+      if(currentStudents.length === 0){
+        showLoadMsg('Attendance was recorded for this exam, but no students were marked present that day.', 'status-warn');
+        return;
+      }
+
+      showLoadMsg('Loading exam paper...', 'status-info');
+      fetch(WEB_APP_URL + '?action=examPaper&examId=' + encodeURIComponent(examSelect.value))
+        .then(function(res){ return res.json(); })
+        .then(function(exam){
+          if(exam.error){ showLoadMsg(exam.error, 'status-error'); return; }
+          currentExam = exam;
+          loadMsg.style.display = 'none';
+          renderMarksTable(school);
+        })
+        .catch(function(){ showLoadMsg('Could not load the exam paper.', 'status-error'); });
     })
-    .catch(function(){ showLoadMsg('Could not load the exam paper.', 'status-error'); });
+    .catch(function(){ showLoadMsg('Could not check attendance records. Please try again.', 'status-error'); });
 }
 
 function renderMarksTable(school){
@@ -364,13 +398,96 @@ function saveMarks(){
       if(result.status === 'success'){
         try { localStorage.setItem('nrstc_marks_entry_name', reportedBy); } catch(e){}
         lastSavedReport = { school: school, students: students, totalMarks: totalMarks };
-        showSaveStatus('Marks saved successfully. Thank you.', 'status-success');
+        showSaveStatus('Marks saved successfully. This exam is now locked for this centre — results are shown below.', 'status-success');
         document.getElementById('downloadExcelBtn').style.display = '';
+        document.getElementById('printAllCardsBtn').style.display = '';
+        lockMarksEntry();
       } else {
         showSaveStatus('Could not save: ' + (result.message || 'unknown error'), 'status-error');
       }
     })
     .catch(function(){ showSaveStatus('Network error while saving.', 'status-error'); });
+}
+
+function lockMarksEntry(){
+  document.querySelectorAll('.q-input').forEach(function(inp){ inp.disabled = true; });
+  document.querySelectorAll('.att-btn').forEach(function(btn){ btn.disabled = true; });
+  document.getElementById('markAllBtn').style.display = 'none';
+  document.getElementById('saveMarksBtn').disabled = true;
+  document.getElementById('saveMarksBtn').textContent = 'Locked — Marks Saved';
+  document.getElementById('reportedBy').disabled = true;
+  document.getElementById('reportedByPin').disabled = true;
+  schoolSelect.disabled = true;
+  examSelect.disabled = true;
+
+  // Add a Card column so each student's report card can be viewed/printed individually
+  const headRow = document.getElementById('marksHeadRow');
+  if (!headRow.querySelector('.card-col')) {
+    const th = document.createElement('th');
+    th.className = 'card-col';
+    th.textContent = 'Card';
+    headRow.appendChild(th);
+  }
+  lastSavedReport.students.forEach(function(s, i){
+    const row = document.getElementById('row-' + i);
+    if (!row || row.querySelector('.card-td')) return;
+    const td = document.createElement('td');
+    td.className = 'card-td';
+    if (s.attendance === 'Present') {
+      const btn = document.createElement('button');
+      btn.textContent = 'Card';
+      btn.className = 'btn-blue btn-small';
+      btn.type = 'button';
+      btn.onclick = function(){ showStudentCard(s.studentName, s.total); };
+      td.appendChild(btn);
+    } else {
+      td.textContent = '—';
+    }
+    row.appendChild(td);
+  });
+}
+
+function buildCardHtml(studentName, marks){
+  const total = lastSavedReport.totalMarks;
+  const pct = total ? Math.round(marks / total * 100) : 0;
+  const grade = getGrade(pct);
+  const gradeLabel = {A:'Excellent',B:'Good',C:'Satisfactory',D:'Needs Improvement',F:'Fail'}[grade];
+  return '<div class="rpt">' +
+    '<div class="rpt-hdr"><img src="logo.jpg" alt=""><h2>NRSTC Progress Report</h2>' +
+    '<p style="font-size:12px; color:#666666;">Samagra Shiksha &middot; Golaghat, Assam</p></div>' +
+    '<div class="rpt-banner">PROGRESS REPORT CARD</div>' +
+    '<div class="rpt-info">' +
+    '<div><span class="k">Student name:</span> ' + esc(studentName) + '</div>' +
+    '<div><span class="k">School / Centre:</span> ' + esc(lastSavedReport.school.name) + '</div>' +
+    '<div><span class="k">Class:</span> ' + esc(currentExam.classLevel) + '</div>' +
+    '<div><span class="k">Exam name:</span> ' + esc(currentExam.examName) + '</div>' +
+    '<div><span class="k">Subject:</span> ' + esc(currentExam.subjectEN) + '</div>' +
+    '<div><span class="k">Exam date:</span> ' + esc(currentExam.examDate || '—') + '</div></div>' +
+    '<div class="rpt-summary"><div class="rsb"><b>' + marks + '/' + total + '</b><span>Marks</span></div>' +
+    '<div class="rsb"><b>' + pct + '%</b><span>Percentage</span></div>' +
+    '<div class="rsb"><b>' + grade + '</b><span>' + gradeLabel + '</span></div></div>' +
+    '<div class="rpt-sign"><div><div class="sl">EV / Instructor</div></div><div><div class="sl">DQM / Official</div></div>' +
+    '<div><div class="sl">Parent / Guardian</div></div></div>' +
+    '<div class="rpt-foot">NRSTC Marks Entry &middot; ' +
+    new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}) + ' &middot; Computer-generated document</div></div>';
+}
+
+function showStudentCard(studentName, marks){
+  document.getElementById('rptBody').innerHTML = buildCardHtml(studentName, marks);
+  document.getElementById('reportOverlay').style.display = 'block';
+}
+
+function printAllCards(){
+  if(!lastSavedReport) return;
+  const present = lastSavedReport.students.filter(function(s){ return s.attendance === 'Present'; });
+  if(present.length === 0){ alert('No present students to generate cards for.'); return; }
+  const html = present.map(function(s){ return buildCardHtml(s.studentName, s.total); }).join('');
+  document.getElementById('rptBody').innerHTML = html;
+  document.getElementById('reportOverlay').style.display = 'block';
+}
+
+function closeReportOverlay(){
+  document.getElementById('reportOverlay').style.display = 'none';
 }
 
 function showSaveStatus(text, cls){
@@ -396,6 +513,14 @@ function downloadExcelReport(){
   XLSX.writeFile(wb, fileName);
 }
 </script>
+
+<div id="reportOverlay" style="display:none; position:fixed; inset:0; background:#ffffff; z-index:999; overflow-y:auto; padding:20px;">
+  <div class="no-print" style="margin-bottom:10px;">
+    <button class="btn-blue" onclick="window.print()">Print</button>
+    <button type="button" class="btn-orange" onclick="closeReportOverlay()">Close</button>
+  </div>
+  <div id="rptBody"></div>
+</div>
 
 </body>
 </html>
