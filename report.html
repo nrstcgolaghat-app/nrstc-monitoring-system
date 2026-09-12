@@ -264,7 +264,30 @@
       <input type="text" id="visitTime" disabled placeholder="Captured when you check in below">
     </fieldset>
 
-    <fieldset id="evStatusFieldset" style="order:2;">
+    <fieldset id="centreStatusFieldset" class="mode-official" style="order:2;">
+      <legend>Centre Status</legend>
+
+      <label>Is the centre open today?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="centreOpen" value="Yes" checked> Yes</label>
+        <label><input type="radio" name="centreOpen" value="No"> No</label>
+      </div>
+
+      <div id="officialEvPresenceWrap">
+        <label>Is the EV present at the centre today?</label>
+        <div class="radio-row">
+          <label><input type="radio" name="officialObservedEvPresent" value="Yes" checked> Yes</label>
+          <label><input type="radio" name="officialObservedEvPresent" value="No"> No</label>
+        </div>
+
+        <div id="centreRunByWrap" style="display:none;">
+          <label>Centre being run by (since EV is absent)</label>
+          <input type="text" id="centreRunBy" placeholder="e.g. SMC member name, substitute, parent volunteer">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset id="evStatusFieldset" style="order:3;">
       <legend>EV (Educational Volunteer) Status</legend>
 
       <div class="mode-official">
@@ -333,29 +356,6 @@
 
         <label>Other reason (if applicable)</label>
         <input type="text" id="absenceReasonOther" placeholder="Specify reason">
-      </div>
-    </fieldset>
-
-    <fieldset class="mode-official">
-      <legend>Centre Status</legend>
-
-      <label>Is the centre open today?</label>
-      <div class="radio-row">
-        <label><input type="radio" name="centreOpen" value="Yes" checked> Yes</label>
-        <label><input type="radio" name="centreOpen" value="No"> No</label>
-      </div>
-
-      <div id="officialEvPresenceWrap">
-        <label>Is the EV present at the centre today?</label>
-        <div class="radio-row">
-          <label><input type="radio" name="officialObservedEvPresent" value="Yes" checked> Yes</label>
-          <label><input type="radio" name="officialObservedEvPresent" value="No"> No</label>
-        </div>
-
-        <div id="centreRunByWrap" style="display:none;">
-          <label>Centre being run by (since EV is absent)</label>
-          <input type="text" id="centreRunBy" placeholder="e.g. SMC member name, substitute, parent volunteer">
-        </div>
       </div>
     </fieldset>
 
@@ -615,10 +615,27 @@ function updateCentreOpenVisibility() {
   if (!isClosed) {
     updateStudentListVisibility(); // restore normal per-activity visibility rules
   }
+  updateEvStatusFieldsetVisibility();
+}
+
+function updateEvStatusFieldsetVisibility() {
+  const mode = reportTypeSelect.value;
+  if (mode !== 'Official') {
+    document.getElementById('evStatusFieldset').style.display = '';
+    return;
+  }
+  const centreOpenRadio = document.querySelector('input[name="centreOpen"]:checked');
+  const evPresentRadio = document.querySelector('input[name="officialObservedEvPresent"]:checked');
+  const noEvToName = (centreOpenRadio && centreOpenRadio.value === 'No') ||
+    (evPresentRadio && evPresentRadio.value === 'No');
+  document.getElementById('evStatusFieldset').style.display = noEvToName ? 'none' : '';
 }
 
 document.querySelectorAll('input[name="centreOpen"]').forEach(function(r) {
   r.addEventListener('change', updateCentreOpenVisibility);
+});
+document.querySelectorAll('input[name="officialObservedEvPresent"]').forEach(function(r) {
+  r.addEventListener('change', updateEvStatusFieldsetVisibility);
 });
 
 document.querySelectorAll('input[name="officialObservedEvPresent"]').forEach(function(r) {
@@ -643,18 +660,21 @@ function applyReportMode(mode) {
 
   const centreFs = document.getElementById('centreDetailsFieldset');
   const evStatusFs = document.getElementById('evStatusFieldset');
+  const centreStatusFs = document.getElementById('centreStatusFieldset');
 
   if (mode === 'EV') {
     // EV identifies themselves first; their centre auto-fills afterward
     evStatusFs.style.order = 1;
     centreFs.style.order = 2;
+    centreStatusFs.style.order = 3;
     document.getElementById('schoolName').disabled = true;
     applySchoolSelection("");
     populateGlobalEvSelect();
   } else {
-    // Officials pick a centre first, then see which EVs are assigned there
+    // Officials pick a centre first, then record its status, then see which EVs are assigned there
     centreFs.style.order = 1;
-    evStatusFs.style.order = 2;
+    centreStatusFs.style.order = 2;
+    evStatusFs.style.order = 3;
     document.getElementById('schoolName').disabled = false;
     document.getElementById('evNamesContainer').innerHTML = '<select class="evNameSelect"><option value="">-- Select School / Centre first --</option></select>';
   }
