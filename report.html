@@ -337,6 +337,29 @@
     </fieldset>
 
     <fieldset class="mode-official">
+      <legend>Centre Status</legend>
+
+      <label>Is the centre open today?</label>
+      <div class="radio-row">
+        <label><input type="radio" name="centreOpen" value="Yes" checked> Yes</label>
+        <label><input type="radio" name="centreOpen" value="No"> No</label>
+      </div>
+
+      <div id="officialEvPresenceWrap">
+        <label>Is the EV present at the centre today?</label>
+        <div class="radio-row">
+          <label><input type="radio" name="officialObservedEvPresent" value="Yes" checked> Yes</label>
+          <label><input type="radio" name="officialObservedEvPresent" value="No"> No</label>
+        </div>
+
+        <div id="centreRunByWrap" style="display:none;">
+          <label>Centre being run by (since EV is absent)</label>
+          <input type="text" id="centreRunBy" placeholder="e.g. SMC member name, substitute, parent volunteer">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="mode-official">
       <legend>Visit Details</legend>
 
       <label>Official Name <span class="required">*</span></label>
@@ -351,7 +374,7 @@
       </select>
     </fieldset>
 
-    <fieldset class="ev-present-only">
+    <fieldset class="ev-present-only official-nil-when-closed">
       <legend>Today's Activities</legend>
 
       <div class="checkbox-row">
@@ -367,7 +390,7 @@
       <input type="text" id="otherActivity">
     </fieldset>
 
-    <fieldset class="ev-present-only" id="assessmentDetailsFieldset" style="display:none;">
+    <fieldset class="ev-present-only official-nil-when-closed" id="assessmentDetailsFieldset" style="display:none;">
       <legend>Assessment / Test Details</legend>
 
       <label>What is this visit for?</label>
@@ -392,7 +415,7 @@
       <div id="resultsRosterMsg" style="font-size:12px; color:#666666; margin-top:6px;"></div>
     </fieldset>
 
-    <fieldset class="ev-present-only" id="studentListFieldset">
+    <fieldset class="ev-present-only official-nil-when-closed" id="studentListFieldset">
       <legend>Student attendance and Daily Progress</legend>
 
       <div class="two-col">
@@ -413,7 +436,7 @@
       <div id="rosterCards"></div>
     </fieldset>
 
-    <fieldset class="mode-official">
+    <fieldset class="mode-official official-nil-when-closed">
       <legend>Records</legend>
 
       <label>SMC / centre management meeting records maintained</label>
@@ -438,7 +461,7 @@
       <div id="locationText"></div>
     </fieldset>
 
-    <fieldset class="mode-official">
+    <fieldset class="mode-official official-nil-when-closed">
       <legend>Overall Assessment</legend>
 
       <label>Overall rating</label>
@@ -579,6 +602,31 @@ function verifyEvPin() {
 
 document.getElementById('evPin').addEventListener('input', resetPinVerification);
 
+function updateCentreOpenVisibility() {
+  const mode = reportTypeSelect.value;
+  const centreOpenRadio = document.querySelector('input[name="centreOpen"]:checked');
+  const isClosed = mode === 'Official' && centreOpenRadio && centreOpenRadio.value === 'No';
+
+  document.getElementById('officialEvPresenceWrap').style.display = isClosed ? 'none' : '';
+  document.querySelectorAll('.official-nil-when-closed').forEach(function(el) {
+    el.style.display = isClosed ? 'none' : '';
+  });
+
+  if (!isClosed) {
+    updateStudentListVisibility(); // restore normal per-activity visibility rules
+  }
+}
+
+document.querySelectorAll('input[name="centreOpen"]').forEach(function(r) {
+  r.addEventListener('change', updateCentreOpenVisibility);
+});
+
+document.querySelectorAll('input[name="officialObservedEvPresent"]').forEach(function(r) {
+  r.addEventListener('change', function() {
+    document.getElementById('centreRunByWrap').style.display = (this.value === 'No') ? '' : 'none';
+  });
+});
+
 function applyReportMode(mode) {
   officialModeEls.forEach(function(el) { el.style.display = (mode === 'Official') ? '' : 'none'; });
   evModeEls.forEach(function(el) { el.style.display = (mode === 'EV') ? '' : 'none'; });
@@ -614,6 +662,7 @@ function applyReportMode(mode) {
   if (mode !== 'EV') { pinVerified = false; dailyLocked = false; }
   updatePostAuthGate();
   updateEvPresenceVisibility();
+  updateCentreOpenVisibility();
 
   if (mode === 'Official' && document.getElementById('schoolName').value !== "") {
     renderEvNamesSelect();
@@ -1664,6 +1713,9 @@ form.addEventListener('submit', function(e) {
     cluster: document.getElementById('cluster').value,
     schoolType: document.getElementById('schoolType').value,
     officialName: document.getElementById('officialName').value,
+    centreOpen: getRadioValue('centreOpen'),
+    officialObservedEvPresent: getRadioValue('officialObservedEvPresent'),
+    centreRunBy: document.getElementById('centreRunBy').value,
     evPresent: getRadioValue('evPresent'),
     evPin: document.getElementById('evPin').value,
     absenceReason: absent ? document.getElementById('absenceReason').value : '',
