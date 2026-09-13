@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>বিদ্যাসেতু (Bidya Xetu) — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+    color: #000000;
+  }
+  .as-text { font-family: "Noto Sans Bengali", Arial, sans-serif; }
+  header {
+    background-color: #eaf3fb;
+    border-bottom: 2px solid #1a5aa8;
+    padding: 12px 15px;
+    text-align: center;
+  }
+  header img { max-width: 220px; height: auto; margin-bottom: 8px; }
+  .brand-main { font-size: 24px; font-weight: bold; color: #1a3d6d; display: block; letter-spacing: 0.5px; }
+  .brand-sub { font-size: 12px; font-style: italic; color: #1a5aa8; display: block; margin-top: -2px; }
+  .page-tag { font-size: 14px; font-weight: bold; color: #333333; margin: 4px 0 0 0; }
+  header p.desc { margin: 4px 0 0 0; font-size: 13px; color: #333333; }
+
+  #lockScreen { max-width: 380px; margin: 60px auto; padding: 20px; border: 1px solid #1a5aa8; text-align: center; }
+  #lockScreen input {
+    width: 100%; padding: 10px; font-size: 18px; text-align: center; letter-spacing: 4px;
+    border: 1px solid #999999; margin: 10px 0; font-family: Arial, Helvetica, sans-serif;
+  }
+  #lockError { color: #b02a2a; font-size: 13px; display: none; margin-bottom: 8px; }
+  #appBody { display: none; }
+
+  .container { max-width: 1000px; margin: 0 auto; padding: 15px; }
+  fieldset { border: 1px solid #1a5aa8; margin-bottom: 15px; padding: 10px 12px 14px 12px; }
+  legend { background-color: #eaf3fb; border: 1px solid #1a5aa8; padding: 3px 10px; font-weight: bold; color: #1a3d6d; font-size: 15px; }
+  label { display: block; margin-top: 10px; margin-bottom: 3px; font-size: 14px; font-weight: bold; }
+  input[type=text], input[type=date], select {
+    width: 100%; padding: 8px; font-size: 14px; font-family: Arial, Helvetica, sans-serif; border: 1px solid #999999;
+  }
+  .two-col { display: flex; gap: 10px; flex-wrap: wrap; }
+  .two-col > div { flex: 1; min-width: 140px; }
+
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+  .tab-btn {
+    flex: 1; min-width: 120px; padding: 10px; text-align: center; font-weight: bold; font-size: 13px; cursor: pointer;
+    background-color: #eaf3fb; border: 1px solid #1a5aa8; color: #1a3d6d;
+  }
+  .tab-btn.active { background-color: #1a5aa8; color: #ffffff; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  button {
+    padding: 10px 16px; font-size: 14px; font-weight: bold; color: #ffffff;
+    background-color: #1a7a3c; border: 1px solid #145a2c; cursor: pointer; margin-top: 8px; margin-right: 6px;
+  }
+  .btn-blue { background-color: #1a5aa8; border-color: #123d73; }
+  .btn-orange { background-color: #c96a1a; border-color: #8f4a10; }
+  .btn-small { padding: 6px 12px; font-size: 12px; margin-top: 0; }
+
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .chip {
+    padding: 6px 12px; font-size: 13px; font-weight: bold; border: 1px solid #1a5aa8; color: #1a5aa8;
+    background-color: #ffffff; cursor: pointer; border-radius: 0;
+  }
+  .chip.active { background-color: #1a5aa8; color: #ffffff; }
+
+  .stat-strip { display: flex; flex-wrap: wrap; gap: 1px; background-color: #999999; border: 1px solid #999999; margin-bottom: 15px; }
+  .stat-box { flex: 1; min-width: 130px; background-color: #ffffff; padding: 12px 10px; text-align: center; cursor: pointer; }
+  .stat-box:hover { background-color: #eaf3fb; }
+  .stat-box b { display: block; font-size: 24px; color: #1a5aa8; }
+  .stat-box span { font-size: 11px; color: #666666; }
+
+  table.stbl { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+  table.stbl th { background-color: #eaf3fb; border: 1px solid #1a5aa8; padding: 6px; text-align: left; white-space: nowrap; }
+  table.stbl td { border: 1px solid #999999; padding: 6px; white-space: nowrap; }
+  table.stbl tbody tr.row-white { background-color: #ffffff; }
+  table.stbl tbody tr.row-yellow { background-color: #fdf8e2; }
+  .table-scroll { overflow-x: auto; }
+
+  #tableMsg { font-size: 13px; color: #666666; margin-top: 8px; }
+  footer { text-align: center; font-size: 12px; color: #666666; padding: 15px; }
+
+  @media print {
+    .no-print { display: none !important; }
+    .tab-panel { display: none !important; }
+    .tab-panel.active { display: block !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="lockScreen">
+  <img src="logo.jpg" alt="Samagra Shiksha logo" style="max-width:220px; height:auto; margin-bottom:10px;">
+  <h1 style="margin:0 0 4px 0;"><span class="as-text brand-main">বিদ্যাসেতু</span><span class="brand-sub">Bidya Xetu</span></h1>
+  <p style="font-size:14px; font-weight:bold; color:#1a3d6d; margin-bottom:4px;">Admin Dashboard</p>
+  <label>Admin Passcode</label>
+  <input type="text" id="passcodeInput" placeholder="Enter passcode">
+  <div id="lockError">Incorrect passcode. Please try again.</div>
+  <button class="btn-blue" style="width:100%;" onclick="checkPasscode()">Unlock</button>
+</div>
+
+<div id="appBody">
+  <header>
+    <img src="logo.jpg" alt="Samagra Shiksha logo">
+    <h1 style="margin:0;"><span class="as-text brand-main">বিদ্যাসেতু</span><span class="brand-sub">Bidya Xetu</span></h1>
+    <p class="page-tag">Admin Dashboard</p>
+    <p class="desc">District Mission Coordinator &middot; Samagra Shiksha &middot; Golaghat, Assam</p>
+    <p class="desc"><a href="report.html" style="color:#1a5aa8; font-weight:bold;">&larr; Back to Field Report</a> &middot; <a href="exam-manager.html" style="color:#1a5aa8; font-weight:bold;">Exam Manager</a> &middot; <a href="index.html" style="color:#1a5aa8; font-weight:bold;">Home</a></p>
+  </header>
+
+  <div class="container">
+
+    <fieldset class="no-print">
+      <legend>Filters</legend>
+      <label>Date Range</label>
+      <div class="chip-row" id="dateChips">
+        <div class="chip active" data-range="today">Today</div>
+        <div class="chip" data-range="week">This Week</div>
+        <div class="chip" data-range="month">This Month</div>
+        <div class="chip" data-range="all">All Time</div>
+      </div>
+      <div class="two-col">
+        <div><label>From (custom)</label><input type="date" id="customFrom"></div>
+        <div><label>To (custom)</label><input type="date" id="customTo"></div>
+      </div>
+      <div class="two-col">
+        <div><label>Block</label><select id="blockFilter"><option value="">-- All Blocks --</option></select></div>
+        <div><label>Centre</label><select id="centreFilter"><option value="">-- All Centres --</option></select></div>
+      </div>
+      <button type="button" class="btn-blue" onclick="applyFilters()">Apply Filters</button>
+      <button type="button" class="btn-orange" onclick="downloadAllData()">Download All Data (Excel, unfiltered)</button>
+      <div id="filterMsg" style="font-size:12px; color:#666666; margin-top:6px;"></div>
+    </fieldset>
+
+    <div class="tab-bar no-print">
+      <div class="tab-btn active" data-tab="overview" onclick="showTab('overview')">Overview</div>
+      <div class="tab-btn" data-tab="evreports" onclick="showTab('evreports')">EV Reports</div>
+      <div class="tab-btn" data-tab="official" onclick="showTab('official')">Official Visits</div>
+      <div class="tab-btn" data-tab="examresults" onclick="showTab('examresults')">Exam Results</div>
+      <div class="tab-btn" data-tab="centres" onclick="showTab('centres')">Centre Summary</div>
+    </div>
+
+    <div class="tab-panel active" id="tab-overview">
+      <fieldset>
+        <legend>District Overview</legend>
+        <div id="overviewStats" class="stat-strip"></div>
+        <p style="font-size:12px; color:#666666;">Tap a figure to jump to the relevant tab, filtered.</p>
+      </fieldset>
+    </div>
+
+    <div class="tab-panel" id="tab-evreports">
+      <fieldset>
+        <legend>EV Daily Reports</legend>
+        <div class="no-print"><button type="button" class="btn-orange btn-small" onclick="downloadTab('evreports')">Download Excel (this view)</button>
+        <button type="button" class="btn-blue btn-small" onclick="window.print()">Print / PDF</button></div>
+        <div id="evStats" class="stat-strip"></div>
+        <div class="table-scroll"><table class="stbl" id="evTable"><thead><tr>
+          <th>Date</th><th>EV Name</th><th>Centre</th><th>Block</th><th>Activity</th><th>EV Present</th><th>Enrollment</th><th>Present</th><th>Absent</th>
+        </tr></thead><tbody></tbody></table></div>
+        <div id="evMsg" style="font-size:13px; color:#666666;"></div>
+      </fieldset>
+    </div>
+
+    <div class="tab-panel" id="tab-official">
+      <fieldset>
+        <legend>Official Monitoring Visits</legend>
+        <div class="no-print"><button type="button" class="btn-orange btn-small" onclick="downloadTab('official')">Download Excel (this view)</button>
+        <button type="button" class="btn-blue btn-small" onclick="window.print()">Print / PDF</button></div>
+        <div id="officialStats" class="stat-strip"></div>
+        <div class="table-scroll"><table class="stbl" id="officialTable"><thead><tr>
+          <th>Date</th><th>Official</th><th>Designation</th><th>Centre</th><th>Block</th><th>Centre Open</th><th>EV Present</th><th>Overall Rating</th>
+        </tr></thead><tbody></tbody></table></div>
+        <div id="officialMsg" style="font-size:13px; color:#666666;"></div>
+      </fieldset>
+    </div>
+
+    <div class="tab-panel" id="tab-examresults">
+      <fieldset>
+        <legend>Exam Results</legend>
+        <div class="no-print"><button type="button" class="btn-orange btn-small" onclick="downloadTab('examresults')">Download Excel (this view)</button>
+        <button type="button" class="btn-blue btn-small" onclick="window.print()">Print / PDF</button></div>
+        <div id="examStats" class="stat-strip"></div>
+        <div class="table-scroll"><table class="stbl" id="examTable"><thead><tr>
+          <th>Date</th><th>Exam</th><th>Centre</th><th>Student</th><th>Attendance</th><th>Marks</th><th>Total</th><th>%</th><th>Grade</th>
+        </tr></thead><tbody></tbody></table></div>
+        <div id="examMsg" style="font-size:13px; color:#666666;"></div>
+      </fieldset>
+    </div>
+
+    <div class="tab-panel" id="tab-centres">
+      <fieldset>
+        <legend>Centre-wise Summary</legend>
+        <div class="no-print"><button type="button" class="btn-orange btn-small" onclick="downloadTab('centres')">Download Excel (this view)</button>
+        <button type="button" class="btn-blue btn-small" onclick="window.print()">Print / PDF</button></div>
+        <div class="table-scroll"><table class="stbl" id="centresTable"><thead><tr>
+          <th>Centre</th><th>Block</th><th>EV Reports</th><th>Official Visits</th><th>Avg Attendance %</th><th>Exam Results</th><th>Avg Exam %</th>
+        </tr></thead><tbody></tbody></table></div>
+        <div id="centresMsg" style="font-size:13px; color:#666666;"></div>
+      </fieldset>
+    </div>
+
+  </div>
+
+  <footer>Samagra Shiksha &middot; Golaghat</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwPBy1nXX1cin3GaNLrdnKBkbutOdInBU-KYR6hn0-MQ3QIz1KZdFeSXwlBPIR2-Rsf/exec";
+
+let adminPasscode = "";
+let DASH = { schools: [], evResponses: [], officialResponses: [], studentProgress: [], examResults: [], exams: [] };
+let currentRange = 'today';
+let customFrom = null, customTo = null;
+let blockFilter = '', centreFilter = '';
+
+function esc(s){ return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function getGrade(pct){ if(pct>=80)return'A'; if(pct>=60)return'B'; if(pct>=45)return'C'; if(pct>=33)return'D'; return'F'; }
+
+function checkPasscode(){
+  const val = document.getElementById('passcodeInput').value.trim();
+  fetch(WEB_APP_URL + '?action=dashboardData&passcode=' + encodeURIComponent(val))
+    .then(function(res){ return res.json(); })
+    .then(function(json){
+      if(json.error){
+        document.getElementById('lockError').style.display = 'block';
+        return;
+      }
+      adminPasscode = val;
+      DASH = json;
+      document.getElementById('lockError').style.display = 'none';
+      document.getElementById('lockScreen').style.display = 'none';
+      document.getElementById('appBody').style.display = 'block';
+      sessionStorage.setItem('nrstc_dash_passcode', val);
+      populateFilterDropdowns();
+      applyFilters();
+    })
+    .catch(function(){ document.getElementById('lockError').style.display = 'block'; });
+}
+
+const savedPasscode = sessionStorage.getItem('nrstc_dash_passcode');
+if(savedPasscode){
+  document.getElementById('passcodeInput').value = savedPasscode;
+  checkPasscode();
+}
+
+function populateFilterDropdowns(){
+  const blocks = Array.from(new Set(DASH.schools.map(function(s){ return s.block; }).filter(Boolean))).sort();
+  const blockSel = document.getElementById('blockFilter');
+  blockSel.innerHTML = '<option value="">-- All Blocks --</option>';
+  blocks.forEach(function(b){
+    const opt = document.createElement('option');
+    opt.value = b; opt.textContent = b;
+    blockSel.appendChild(opt);
+  });
+
+  const centreSel = document.getElementById('centreFilter');
+  centreSel.innerHTML = '<option value="">-- All Centres --</option>';
+  DASH.schools.forEach(function(s){
+    const opt = document.createElement('option');
+    opt.value = s.name; opt.textContent = s.name;
+    centreSel.appendChild(opt);
+  });
+}
+
+document.querySelectorAll('.chip').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+    this.classList.add('active');
+    currentRange = this.dataset.range;
+    applyFilters();
+  });
+});
+
+function showTab(name){
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelector('.tab-btn[data-tab="' + name + '"]').classList.add('active');
+}
+
+function inDateRange(dateStr){
+  if(!dateStr) return false;
+  const d = new Date(dateStr);
+  if(isNaN(d.getTime())) return false;
+  const now = new Date();
+
+  if(customFrom || customTo){
+    if(customFrom && d < customFrom) return false;
+    if(customTo && d > customTo) return false;
+    return true;
+  }
+
+  if(currentRange === 'all') return true;
+
+  const dY = d.getFullYear(), dM = d.getMonth(), dD = d.getDate();
+  const nY = now.getFullYear(), nM = now.getMonth(), nD = now.getDate();
+
+  if(currentRange === 'today'){
+    return dY === nY && dM === nM && dD === nD;
+  }
+  if(currentRange === 'month'){
+    return dY === nY && dM === nM;
+  }
+  if(currentRange === 'week'){
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0,0,0,0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+    return d >= startOfWeek && d < endOfWeek;
+  }
+  return true;
+}
+
+function fmtDate(dateStr){
+  const d = new Date(dateStr);
+  if(isNaN(d.getTime())) return String(dateStr || '');
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function applyFilters(){
+  const fromVal = document.getElementById('customFrom').value;
+  const toVal = document.getElementById('customTo').value;
+  customFrom = fromVal ? new Date(fromVal) : null;
+  customTo = toVal ? new Date(toVal + 'T23:59:59') : null;
+  blockFilter = document.getElementById('blockFilter').value;
+  centreFilter = document.getElementById('centreFilter').value;
+
+  renderOverview();
+  renderEvReports();
+  renderOfficial();
+  renderExamResults();
+  renderCentres();
+
+  document.getElementById('filterMsg').textContent = 'Filters applied.';
+}
+
+function matchesCentre(schoolName){
+  if(centreFilter && schoolName !== centreFilter) return false;
+  if(blockFilter){
+    const school = DASH.schools.find(function(s){ return s.name === schoolName; });
+    if(!school || school.block !== blockFilter) return false;
+  }
+  return true;
+}
+
+function filteredEv(){
+  return DASH.evResponses.filter(function(r){ return inDateRange(r.Timestamp) && matchesCentre(r.SchoolName); });
+}
+function filteredOfficial(){
+  return DASH.officialResponses.filter(function(r){ return inDateRange(r.Timestamp) && matchesCentre(r.SchoolName); });
+}
+function filteredExamResults(){
+  return DASH.examResults.filter(function(r){ return inDateRange(r.Timestamp) && matchesCentre(r.SchoolName); });
+}
+
+function renderOverview(){
+  const ev = filteredEv();
+  const off = filteredOfficial();
+  const results = filteredExamResults().filter(function(r){ return r.ResultStatus === 'Result Declared'; });
+
+  const centresReported = new Set(ev.concat(off).map(function(r){ return r.SchoolName; }));
+  const totalCentres = DASH.schools.length;
+
+  let totalEnroll = 0, totalPresent = 0;
+  ev.concat(off).forEach(function(r){
+    totalEnroll += Number(r.TotalEnrollment) || 0;
+    totalPresent += Number(r.StudentsPresent) || 0;
+  });
+  const avgAttendance = totalEnroll ? Math.round(totalPresent / totalEnroll * 100) : 0;
+
+  let sumPct = 0;
+  results.forEach(function(r){
+    const total = Number(r.TotalMarks) || 0;
+    const marks = Number(r.MarksObtained) || 0;
+    sumPct += total ? (marks / total * 100) : 0;
+  });
+  const avgExamPct = results.length ? Math.round(sumPct / results.length) : 0;
+
+  const stats = [
+    { label: 'EV Reports', value: ev.length, tab: 'evreports' },
+    { label: 'Official Visits', value: off.length, tab: 'official' },
+    { label: 'Centres Reporting', value: centresReported.size + ' / ' + totalCentres, tab: 'centres' },
+    { label: 'Avg Attendance', value: avgAttendance + '%', tab: 'evreports' },
+    { label: 'Results Declared', value: results.length, tab: 'examresults' },
+    { label: 'Avg Exam Score', value: avgExamPct + '%', tab: 'examresults' }
+  ];
+  const box = document.getElementById('overviewStats');
+  box.innerHTML = '';
+  stats.forEach(function(s){
+    const d = document.createElement('div');
+    d.className = 'stat-box';
+    d.innerHTML = '<b>' + s.value + '</b><span>' + s.label + '</span>';
+    d.onclick = function(){ showTab(s.tab); };
+    box.appendChild(d);
+  });
+}
+
+function renderTable(tbody, rows, rowBuilder){
+  tbody.innerHTML = '';
+  rows.forEach(function(r, i){
+    const tr = document.createElement('tr');
+    tr.className = (i % 2 === 0) ? 'row-white' : 'row-yellow';
+    tr.innerHTML = rowBuilder(r);
+    tbody.appendChild(tr);
+  });
+}
+
+function renderEvReports(){
+  const rows = filteredEv();
+  let totalEnroll = 0, totalPresent = 0;
+  rows.forEach(function(r){ totalEnroll += Number(r.TotalEnrollment) || 0; totalPresent += Number(r.StudentsPresent) || 0; });
+  document.getElementById('evStats').innerHTML =
+    '<div class="stat-box"><b>' + rows.length + '</b><span>Reports</span></div>' +
+    '<div class="stat-box"><b>' + totalEnroll + '</b><span>Total Enrollment</span></div>' +
+    '<div class="stat-box"><b>' + totalPresent + '</b><span>Total Present</span></div>';
+
+  renderTable(document.querySelector('#evTable tbody'), rows, function(r){
+    return '<td>' + fmtDate(r.Timestamp) + '</td><td>' + esc(r.EVNames) + '</td><td>' + esc(r.SchoolName) + '</td><td>' + esc(r.Block) + '</td>' +
+      '<td>' + esc(r.Activities) + '</td><td>' + esc(r.EVPresent) + '</td><td>' + esc(r.TotalEnrollment) + '</td><td>' + esc(r.StudentsPresent) + '</td>' +
+      '<td>' + (Number(r.TotalEnrollment||0) - Number(r.StudentsPresent||0)) + '</td>';
+  });
+  document.getElementById('evMsg').textContent = rows.length === 0 ? 'No EV reports match the current filters.' : rows.length + ' report(s) shown.';
+}
+
+function renderOfficial(){
+  const rows = filteredOfficial();
+  document.getElementById('officialStats').innerHTML =
+    '<div class="stat-box"><b>' + rows.length + '</b><span>Visits</span></div>' +
+    '<div class="stat-box"><b>' + rows.filter(function(r){ return r.CentreOpen === 'No'; }).length + '</b><span>Centres Found Closed</span></div>' +
+    '<div class="stat-box"><b>' + rows.filter(function(r){ return r.EVPresentObserved === 'No'; }).length + '</b><span>EV Absent Observed</span></div>';
+
+  renderTable(document.querySelector('#officialTable tbody'), rows, function(r){
+    return '<td>' + fmtDate(r.Timestamp) + '</td><td>' + esc(r.OfficialName) + '</td><td>' + esc(r.Designation) + '</td><td>' + esc(r.SchoolName) + '</td>' +
+      '<td>' + esc(r.Block) + '</td><td>' + esc(r.CentreOpen) + '</td><td>' + esc(r.EVPresentObserved) + '</td><td>' + esc(r.OverallRating) + '</td>';
+  });
+  document.getElementById('officialMsg').textContent = rows.length === 0 ? 'No official visits match the current filters.' : rows.length + ' visit(s) shown.';
+}
+
+function renderExamResults(){
+  const rows = filteredExamResults();
+  const declared = rows.filter(function(r){ return r.ResultStatus === 'Result Declared'; });
+  document.getElementById('examStats').innerHTML =
+    '<div class="stat-box"><b>' + declared.length + '</b><span>Results Declared</span></div>' +
+    '<div class="stat-box"><b>' + rows.filter(function(r){ return r.Attendance === 'Absent'; }).length + '</b><span>Absent on Exam Day</span></div>';
+
+  renderTable(document.querySelector('#examTable tbody'), rows, function(r){
+    const exam = DASH.exams.find(function(x){ return x.ExamID === r.ExamID; });
+    const total = Number(r.TotalMarks) || 0;
+    const marks = Number(r.MarksObtained) || 0;
+    const pct = (r.ResultStatus === 'Result Declared' && total) ? Math.round(marks / total * 100) : null;
+    return '<td>' + fmtDate(r.Timestamp) + '</td><td>' + esc(exam ? exam.ExamName : r.ExamID) + '</td><td>' + esc(r.SchoolName) + '</td>' +
+      '<td>' + esc(r.StudentName) + '</td><td>' + esc(r.Attendance) + '</td><td>' + (r.ResultStatus === 'Result Declared' ? marks : '—') + '</td>' +
+      '<td>' + (r.ResultStatus === 'Result Declared' ? total : '—') + '</td><td>' + (pct !== null ? pct + '%' : '—') + '</td>' +
+      '<td>' + (pct !== null ? getGrade(pct) : '—') + '</td>';
+  });
+  document.getElementById('examMsg').textContent = rows.length === 0 ? 'No exam results match the current filters.' : rows.length + ' record(s) shown.';
+}
+
+function renderCentres(){
+  const relevantSchools = DASH.schools.filter(function(s){ return matchesCentre(s.name); });
+  const ev = filteredEv();
+  const off = filteredOfficial();
+  const results = filteredExamResults().filter(function(r){ return r.ResultStatus === 'Result Declared'; });
+
+  renderTable(document.querySelector('#centresTable tbody'), relevantSchools, function(s){
+    const evCount = ev.filter(function(r){ return r.SchoolName === s.name; }).length;
+    const offCount = off.filter(function(r){ return r.SchoolName === s.name; }).length;
+    const combined = ev.concat(off).filter(function(r){ return r.SchoolName === s.name; });
+    let enroll = 0, present = 0;
+    combined.forEach(function(r){ enroll += Number(r.TotalEnrollment) || 0; present += Number(r.StudentsPresent) || 0; });
+    const avgAtt = enroll ? Math.round(present / enroll * 100) : 0;
+    const centreResults = results.filter(function(r){ return r.SchoolName === s.name; });
+    let sumPct = 0;
+    centreResults.forEach(function(r){
+      const total = Number(r.TotalMarks) || 0;
+      sumPct += total ? (Number(r.MarksObtained) || 0) / total * 100 : 0;
+    });
+    const avgExam = centreResults.length ? Math.round(sumPct / centreResults.length) : 0;
+    return '<td>' + esc(s.name) + '</td><td>' + esc(s.block) + '</td><td>' + evCount + '</td><td>' + offCount + '</td>' +
+      '<td>' + (enroll ? avgAtt + '%' : '—') + '</td><td>' + centreResults.length + '</td><td>' + (centreResults.length ? avgExam + '%' : '—') + '</td>';
+  });
+  document.getElementById('centresMsg').textContent = relevantSchools.length + ' centre(s) shown.';
+}
+
+function downloadTab(tabName){
+  let rows = [];
+  if(tabName === 'evreports'){
+    rows = [['Date','EV Name','Centre','Block','Activity','EV Present','Enrollment','Present','Absent']];
+    filteredEv().forEach(function(r){
+      rows.push([fmtDate(r.Timestamp), r.EVNames, r.SchoolName, r.Block, r.Activities, r.EVPresent, r.TotalEnrollment, r.StudentsPresent, (Number(r.TotalEnrollment||0)-Number(r.StudentsPresent||0))]);
+    });
+  } else if(tabName === 'official'){
+    rows = [['Date','Official','Designation','Centre','Block','Centre Open','EV Present','Overall Rating']];
+    filteredOfficial().forEach(function(r){
+      rows.push([fmtDate(r.Timestamp), r.OfficialName, r.Designation, r.SchoolName, r.Block, r.CentreOpen, r.EVPresentObserved, r.OverallRating]);
+    });
+  } else if(tabName === 'examresults'){
+    rows = [['Date','Exam','Centre','Student','Attendance','Marks','Total','%','Grade']];
+    filteredExamResults().forEach(function(r){
+      const exam = DASH.exams.find(function(x){ return x.ExamID === r.ExamID; });
+      const total = Number(r.TotalMarks) || 0;
+      const marks = Number(r.MarksObtained) || 0;
+      const pct = (r.ResultStatus === 'Result Declared' && total) ? Math.round(marks/total*100) : '';
+      rows.push([fmtDate(r.Timestamp), exam ? exam.ExamName : r.ExamID, r.SchoolName, r.StudentName, r.Attendance, r.ResultStatus === 'Result Declared' ? marks : '', r.ResultStatus === 'Result Declared' ? total : '', pct, pct !== '' ? getGrade(pct) : '']);
+    });
+  } else if(tabName === 'centres'){
+    rows = [['Centre','Block','EV Reports','Official Visits','Avg Attendance %','Exam Results','Avg Exam %']];
+    const relevantSchools = DASH.schools.filter(function(s){ return matchesCentre(s.name); });
+    const ev = filteredEv(); const off = filteredOfficial();
+    const results = filteredExamResults().filter(function(r){ return r.ResultStatus === 'Result Declared'; });
+    relevantSchools.forEach(function(s){
+      const evCount = ev.filter(function(r){ return r.SchoolName === s.name; }).length;
+      const offCount = off.filter(function(r){ return r.SchoolName === s.name; }).length;
+      const combined = ev.concat(off).filter(function(r){ return r.SchoolName === s.name; });
+      let enroll = 0, present = 0;
+      combined.forEach(function(r){ enroll += Number(r.TotalEnrollment) || 0; present += Number(r.StudentsPresent) || 0; });
+      const avgAtt = enroll ? Math.round(present/enroll*100) : '';
+      const centreResults = results.filter(function(r){ return r.SchoolName === s.name; });
+      let sumPct = 0;
+      centreResults.forEach(function(r){ const total = Number(r.TotalMarks)||0; sumPct += total ? (Number(r.MarksObtained)||0)/total*100 : 0; });
+      const avgExam = centreResults.length ? Math.round(sumPct/centreResults.length) : '';
+      rows.push([s.name, s.block, evCount, offCount, avgAtt, centreResults.length, avgExam]);
+    });
+  }
+  exportRowsToExcel(rows, tabName + '_' + currentRange);
+}
+
+function downloadAllData(){
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(DASH.evResponses), 'EV_Reports');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(DASH.officialResponses), 'Official_Visits');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(DASH.examResults), 'Exam_Results');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(DASH.studentProgress), 'Student_Progress');
+  XLSX.writeFile(wb, 'NRSTC_All_Data_' + new Date().toISOString().slice(0,10) + '.xlsx');
+}
+
+function exportRowsToExcel(rows, name){
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data');
+  XLSX.writeFile(wb, 'NRSTC_' + name + '.xlsx');
+}
+</script>
+
+</body>
+</html>
